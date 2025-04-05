@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, Image, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -26,6 +29,24 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Check for available cameras when component mounts
+  useEffect(() => {
+    const checkCameras = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cameras = devices.filter(device => device.kind === 'videoinput');
+          setAvailableCameras(cameras);
+          console.log("Available cameras:", cameras.length);
+        }
+      } catch (error) {
+        console.error("Error checking cameras:", error);
+      }
+    };
+    
+    checkCameras();
   }, []);
 
   useEffect(() => {
@@ -52,14 +73,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
         }
       };
       
+      console.log(`Attempting to start camera with facing mode: ${facingMode}`);
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(newStream);
+      setHasCameraPermission(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
       alert('Error accessing camera. Please make sure you have granted camera permissions.');
     }
   };
@@ -85,6 +109,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
 
   const switchCamera = () => {
     setFacingMode(prev => (prev === 'user' ? 'environment' : 'user'));
+    console.log("Switching camera to:", facingMode === 'user' ? 'environment' : 'user');
   };
 
   const captureImage = () => {
@@ -228,7 +253,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
         
         {isCameraActive && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 bg-black bg-opacity-50">
-            {isMobile && (
+            {isMobile && availableCameras.length > 1 && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -264,6 +289,12 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
       {!isCameraActive && !capturedImage && (
         <div className="mt-4 text-center text-sm text-gray-500">
           <p>Take a photo of a medical report or upload an existing image</p>
+        </div>
+      )}
+
+      {hasCameraPermission === false && (
+        <div className="mt-2 text-center text-sm text-red-500">
+          <p>Camera permission denied. Please check your browser settings.</p>
         </div>
       )}
     </div>

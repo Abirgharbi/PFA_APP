@@ -13,6 +13,12 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchAutoHide: false,
     },
+    Camera: {
+      promptLabelHeader: "Access Camera",
+      promptLabelText: "Please allow access to your camera to scan medical reports",
+      promptLabelCancel: "Cancel",
+      promptLabelConfirm: "Allow"
+    }
   },
 };
 

@@ -1,6 +1,5 @@
-
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, FlipCamera, Image, X, Check } from 'lucide-react';
+import { Camera, RefreshCw, Image, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +19,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Check if the device is mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -30,7 +28,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Start camera when the component mounts or the facing mode changes
   useEffect(() => {
     if (isCameraActive) {
       startCamera();
@@ -96,30 +93,23 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Draw the current video frame to the canvas
     const context = canvas.getContext('2d');
     if (!context) return;
     
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Convert canvas to image file
     canvas.toBlob((blob) => {
       if (!blob) return;
       
-      // Create a File from the blob
       const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
       
-      // Set the captured image preview
       setCapturedImage(URL.createObjectURL(blob));
       
-      // Stop the camera
       stopCamera();
       setIsCameraActive(false);
-      
     }, 'image/jpeg', 0.95);
   };
 
@@ -129,13 +119,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
     canvasRef.current.toBlob((blob) => {
       if (!blob) return;
       
-      // Create a File from the blob
       const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
       
-      // Pass the file to the parent component
       onCapture(file);
       
-      // Reset state
       setCapturedImage(null);
     }, 'image/jpeg', 0.95);
   };
@@ -143,7 +130,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
   const rejectCapturedImage = () => {
     setCapturedImage(null);
     
-    // Restart camera if needed
     if (!isCameraActive) {
       setIsCameraActive(true);
     }
@@ -155,7 +141,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
     
     const file = files[0];
     
-    // Check if file is an image
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
@@ -165,7 +150,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
       onSelectFile(file);
     }
     
-    // Reset input value to allow selecting the same file again
     e.target.value = '';
   };
 
@@ -178,7 +162,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
   return (
     <div className="flex flex-col items-center">
       <div className="relative w-full max-w-md aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
-        {/* Hidden elements */}
         <input
           ref={fileInputRef}
           type="file"
@@ -188,7 +171,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
         />
         <canvas ref={canvasRef} className="hidden" />
         
-        {/* Video feed when camera is active */}
         {isCameraActive && (
           <video
             ref={videoRef}
@@ -199,7 +181,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
           />
         )}
         
-        {/* Captured image preview */}
         {capturedImage && !isCameraActive && (
           <div className="relative w-full h-full">
             <img 
@@ -228,7 +209,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
           </div>
         )}
         
-        {/* Empty state when no camera and no image */}
         {!isCameraActive && !capturedImage && (
           <div className="flex flex-col items-center justify-center w-full h-full">
             <div className="text-gray-400 mb-4">
@@ -246,7 +226,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
           </div>
         )}
         
-        {/* Camera controls */}
         {isCameraActive && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 bg-black bg-opacity-50">
             {isMobile && (
@@ -256,7 +235,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }
                 className="mr-4 text-white hover:text-white hover:bg-white/20"
                 onClick={switchCamera}
               >
-                <FlipCamera className="h-5 w-5" />
+                <RefreshCw className="h-5 w-5" />
               </Button>
             )}
             <Button

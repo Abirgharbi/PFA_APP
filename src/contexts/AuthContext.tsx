@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -109,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (foundUser) {
         // Remove the password and complete authentication
-        const { password: _, ...userWithoutPassword } = foundUser;
+        const { password: passwordOmitted, ...userWithoutPassword } = foundUser;
         setUser(userWithoutPassword);
         setIsAuthenticated(true);
         localStorage.setItem("user", JSON.stringify(userWithoutPassword));
@@ -118,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setPendingTwoFactorAuth(null);
         
         // Remove the used code
-        const { [userId]: _, ...restCodes } = twoFactorCodes;
+        const { [userId]: codeOmitted, ...restCodes } = twoFactorCodes;
         setTwoFactorCodes(restCodes);
         
         toast.success(`Welcome back, ${userWithoutPassword.name}!`);
@@ -155,7 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // If no 2FA, proceed with normal login
-      const { password: _, ...userWithoutPassword } = foundUser;
+      const { password: passwordOmitted, ...userWithoutPassword } = foundUser;
       setUser(userWithoutPassword);
       setIsAuthenticated(true);
       localStorage.setItem("user", JSON.stringify(userWithoutPassword));

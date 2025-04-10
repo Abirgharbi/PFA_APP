@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,9 +30,15 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(email, password);
-      if (success) {
-        navigate('/dashboard');
+      const result = await login(email, password);
+      
+      if (result.success) {
+        if (result.requireTwoFactor) {
+          // Redirect to 2FA verification page
+          navigate('/verify-code');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error) {
       toast.error('An error occurred during login');

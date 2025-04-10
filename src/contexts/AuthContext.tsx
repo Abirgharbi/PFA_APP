@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,6 +11,7 @@ export interface User {
   email: string;
   role: UserRole;
   profileImage?: string;
+  twoFactorEnabled?: boolean;
 }
 
 // Mock users for demo
@@ -22,7 +22,8 @@ const mockUsers = [
     password: "doctor123",
     name: "Dr. Sarah Johnson",
     role: "doctor" as UserRole,
-    profileImage: "https://i.pravatar.cc/300?img=1"
+    profileImage: "https://i.pravatar.cc/300?img=1",
+    twoFactorEnabled: true
   },
   {
     id: "d2",
@@ -30,7 +31,8 @@ const mockUsers = [
     password: "doctor123",
     name: "Dr. Michael Chen",
     role: "doctor" as UserRole,
-    profileImage: "https://i.pravatar.cc/300?img=3"
+    profileImage: "https://i.pravatar.cc/300?img=3",
+    twoFactorEnabled: true
   },
   {
     id: "p1",
@@ -38,18 +40,23 @@ const mockUsers = [
     password: "patient123",
     name: "Alex Rodriguez",
     role: "patient" as UserRole,
-    profileImage: "https://i.pravatar.cc/300?img=2"
+    profileImage: "https://i.pravatar.cc/300?img=2",
+    twoFactorEnabled: true
   }
 ];
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{success: boolean; requireTwoFactor?: boolean; tempUserId?: string}>;
   register: (email: string, password: string, name: string, role: UserRole) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
   isDoctor: boolean;
   isPatient: boolean;
+  verifyTwoFactorCode: (userId: string, code: string) => Promise<boolean>;
+  generateTwoFactorCode: (userId: string) => Promise<string>;
+  pendingTwoFactorAuth: {userId: string, email: string} | null;
+  setPendingTwoFactorAuth: (data: {userId: string, email: string} | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -57,6 +64,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [pendingTwoFactorAuth, setPendingTwoFactorAuth] = useState<{userId: string, email: string} | null>(null);
+  const [twoFactorCodes, setTwoFactorCodes] = useState<Record<string, string>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,23 +83,88 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const generateTwoFactorCode = async (userId: string): Promise<string> => {
+    // Generate a random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store the code in our state (in a real app, this would be done on the server)
+    setTwoFactorCodes(prev => ({
+      ...prev,
+      [userId]: code
+    }));
+    
+    // In a real application, this would send an email
+    console.log(`Two-factor code for user ${userId}: ${code}`);
+    
+    return code;
+  };
+
+  const verifyTwoFactorCode = async (userId: string, code: string): Promise<boolean> => {
+    // Check if the code matches
+    const storedCode = twoFactorCodes[userId];
+    
+    if (storedCode && storedCode === code) {
+      // Find the user
+      const foundUser = mockUsers.find(u => u.id === userId);
+      
+      if (foundUser) {
+        // Remove the password and complete authentication
+        const { password: _, ...userWithoutPassword } = foundUser;
+        setUser(userWithoutPassword);
+        setIsAuthenticated(true);
+        localStorage.setItem("user", JSON.stringify(userWithoutPassword));
+        
+        // Clear the pending 2FA
+        setPendingTwoFactorAuth(null);
+        
+        // Remove the used code
+        const { [userId]: _, ...restCodes } = twoFactorCodes;
+        setTwoFactorCodes(restCodes);
+        
+        toast.success(`Welcome back, ${userWithoutPassword.name}!`);
+        return true;
+      }
+    }
+    
+    toast.error("Invalid verification code");
+    return false;
+  };
+
+  const login = async (email: string, password: string): Promise<{success: boolean; requireTwoFactor?: boolean; tempUserId?: string}> => {
     // Mock authentication logic
     const foundUser = mockUsers.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
 
     if (foundUser) {
+      if (foundUser.twoFactorEnabled) {
+        // If 2FA is enabled, we need to verify
+        setPendingTwoFactorAuth({ userId: foundUser.id, email: foundUser.email });
+        
+        // Generate and "send" a code
+        await generateTwoFactorCode(foundUser.id);
+        
+        // In a real app, we would send an email here
+        toast.success(`Verification code sent to ${foundUser.email}`);
+        
+        return { 
+          success: true, 
+          requireTwoFactor: true,
+          tempUserId: foundUser.id
+        };
+      }
+      
+      // If no 2FA, proceed with normal login
       const { password: _, ...userWithoutPassword } = foundUser;
       setUser(userWithoutPassword);
       setIsAuthenticated(true);
       localStorage.setItem("user", JSON.stringify(userWithoutPassword));
       toast.success(`Welcome back, ${userWithoutPassword.name}!`);
-      return true;
+      return { success: true };
     }
 
     toast.error("Invalid email or password");
-    return false;
+    return { success: false };
   };
 
   const register = async (
@@ -111,7 +185,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       name,
       role,
-      profileImage: `https://i.pravatar.cc/300?img=${mockUsers.length + 10}`
+      profileImage: `https://i.pravatar.cc/300?img=${mockUsers.length + 10}`,
+      twoFactorEnabled: true
     };
 
     // Add to mock users (in a real app, this would be handled by the backend)
@@ -143,7 +218,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         isAuthenticated,
         isDoctor: user?.role === "doctor",
-        isPatient: user?.role === "patient"
+        isPatient: user?.role === "patient",
+        verifyTwoFactorCode,
+        generateTwoFactorCode,
+        pendingTwoFactorAuth,
+        setPendingTwoFactorAuth
       }}
     >
       {children}

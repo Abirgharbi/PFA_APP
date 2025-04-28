@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 import AppHeader from '@/components/AppHeader';
+import { login } from '@/services/authService';  // Import the login function
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,7 +15,6 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState<'doctor' | 'patient'>('doctor');
 
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,8 +29,9 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const result = await login(email, password);
-      
+      const loginData = { email, password };
+      const result = await login(loginData);  // Call the login function from authService
+
       if (result.success) {
         if (result.requireTwoFactor) {
           // Redirect to 2FA verification page

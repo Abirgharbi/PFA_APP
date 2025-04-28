@@ -31,7 +31,7 @@ const App = () => {
     const timer = setTimeout(() => {
       setIsAppReady(true);
     }, 200);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -69,3 +69,4 @@ const App = () => {
 };
 
 export default App;
+  

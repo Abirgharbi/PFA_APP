@@ -1,25 +1,22 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserRole } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import AppHeader from '@/components/AppHeader';
+import { registerPatient, registerDoctor } from '@/services/authService';  // Import the register functions
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('doctor');
+  const [role, setRole] = useState<'doctor' | 'patient'>('doctor');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { register } = useAuth();
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,8 +41,14 @@ const Register: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const success = await register(email, password, name, role);
-      if (success) {
+      let result;
+      if (role === 'doctor') {
+        result = await registerDoctor({ fullName: name, email, password });
+      } else {
+        result = await registerPatient({ fullName: name, email, password });
+      }
+
+      if (result) {
         toast.success('Account created successfully!');
         navigate('/dashboard');
       }
@@ -56,7 +59,7 @@ const Register: React.FC = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader />
@@ -74,7 +77,7 @@ const Register: React.FC = () => {
               <Tabs 
                 defaultValue="doctor" 
                 className="w-full mb-6" 
-                onValueChange={(v) => setRole(v as UserRole)}
+                onValueChange={(v) => setRole(v as 'doctor' | 'patient')}
               >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="doctor">Doctor</TabsTrigger>

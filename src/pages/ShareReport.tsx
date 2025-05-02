@@ -139,7 +139,7 @@ const ShareReport: React.FC = () => {
   
   const copyShareLink = () => {
     // In a real app, this would be a shareable link
-    const shareUrl = `https://mediarchive.example.com/shared/${report?.id}`;
+    const shareUrl = `https://MediOCR.example.com/shared/${report?.id}`;
     
     navigator.clipboard.writeText(shareUrl)
       .then(() => {
@@ -316,7 +316,7 @@ const ShareReport: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Input
                           readOnly
-                          value={`https://mediarchive.example.com/shared/${report.id}`}
+                          value={`https://MediOCR.example.com/shared/${report.id}`}
                           className="flex-grow bg-gray-50"
                         />
                         <Button 

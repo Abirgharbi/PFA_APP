@@ -69,7 +69,7 @@ const Login: React.FC = () => {
         <div className="w-full max-w-md">
           <Card className="shadow-md">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl text-center">Sign in to MediArchive</CardTitle>
+              <CardTitle className="text-2xl text-center">Sign in to MediOCR</CardTitle>
               <CardDescription className="text-center">
                 Enter your email and password to sign in
               </CardDescription>
@@ -118,25 +118,6 @@ const Login: React.FC = () => {
                 </Button>
               </form>
               
-              <div className="mt-4">
-                <p className="text-sm text-center text-gray-500 mb-4">Or use demo account</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setDemoCredentials('doctor')}
-                    className="text-xs"
-                  >
-                    Use Doctor Demo
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setDemoCredentials('patient')}
-                    className="text-xs"
-                  >
-                    Use Patient Demo
-                  </Button>
-                </div>
-              </div>
             </CardContent>
             <CardFooter>
               <p className="text-center text-sm text-gray-600 mt-2 w-full">

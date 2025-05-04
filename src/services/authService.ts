@@ -53,13 +53,15 @@ export const registerDoctor = async (user: User) => {
 };
 
 // Login
-export const login = async (loginData: LoginData) => {
+export async function login(data: { email: string, password: string }) {
   try {
-    const response = await axios.post(`${API_URL}/login`, loginData);
+    console.log('Login data:', data); // Log the login data
+    const response = await axios.post(`${API_URL}/login`, data);
+    console.log('Login response:', response.data); // Log the response data
     const { token } = response.data; // Assuming token is returned after login
     await saveToken(token); // Save token after successful login
-    console.log('Login response:', response.data); // Log the response data
-    return response.data; // user + token
+    console.log('Login response:', response.data); 
+    return response.data; 
   } catch (error) {
     console.error('Error during login:', error);
     throw error;
@@ -85,3 +87,17 @@ export const removeToken = async () => {
     console.error('Error removing token:', error);
   }
 };
+export async function verifyTwoFactorCodeAPI(email: string, code: string) {
+  const response = await axios.post(`${API_URL}/verify2FA`, {
+    email,
+    code
+  });
+  return response.data;
+}
+
+export async function generateTwoFactorCodeAPI(email: string) {
+  const response = await axios.post(`${API_URL}/resend-2fa`, {
+    email
+  });
+  return response.data;
+}

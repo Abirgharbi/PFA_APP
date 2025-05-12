@@ -1,5 +1,5 @@
+import { Preferences } from '@capacitor/preferences';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Backend URL
 const API_URL = 'http://localhost:3000/api/auth'; // replace with your backend IP if testing on a mobile device
@@ -17,10 +17,13 @@ interface LoginData {
   password: string;
 }
 
-// Save token in AsyncStorage
+// Save token in Preferences
 const saveToken = async (token: string) => {
   try {
-    await AsyncStorage.setItem('userToken', token); // Save token under the key 'userToken'
+    await Preferences.set({
+      key: 'userToken',
+      value: token, // Save token under the key 'userToken'
+    });
   } catch (error) {
     console.error('Error saving token:', error);
   }
@@ -55,9 +58,7 @@ export const registerDoctor = async (user: User) => {
 // Login
 export async function login(data: { email: string, password: string }) {
   try {
-    console.log('Login data:', data); // Log the login data
     const response = await axios.post(`${API_URL}/login`, data);
-    console.log('Login response:', response.data); // Log the response data
     const { token } = response.data; // Assuming token is returned after login
     await saveToken(token); // Save token after successful login
     console.log('Login response:', response.data); 
@@ -68,31 +69,58 @@ export async function login(data: { email: string, password: string }) {
   }
 };
 
-// Retrieve token from AsyncStorage
+// Retrieve token from Preferences
 export const getToken = async () => {
   try {
-    const token = await AsyncStorage.getItem('userToken');
-    return token; // returns token or null if not found
+    const { value } = await Preferences.get({ key: 'userToken' });
+    return value; // returns token or null if not found
   } catch (error) {
     console.error('Error getting token:', error);
     return null;
   }
 };
 
-// Remove token from AsyncStorage (e.g., during logout)
+// Remove token from Preferences (e.g., during logout)
 export const removeToken = async () => {
   try {
-    await AsyncStorage.removeItem('userToken');
+    await Preferences.remove({ key: 'userToken' });
   } catch (error) {
     console.error('Error removing token:', error);
   }
 };
+
 export async function verifyTwoFactorCodeAPI(email: string, code: string) {
-  const response = await axios.post(`${API_URL}/verify2FA`, {
-    email,
-    code
-  });
-  return response.data;
+  try {
+    console.log('Verifying 2FA code:', { email, code });
+
+    const response = await axios.post(`${API_URL}/verify2FA`, {
+      email,
+      code,
+    });
+
+    const { token, user } = response.data;
+
+    if (token && user) {
+      await Preferences.set({
+        key: 'userToken',
+        value: token,
+      });
+      await Preferences.set({
+        key: 'userName',
+        value: user.fullName || '',
+      });
+      await Preferences.set({
+        key: 'userEmail',
+        value: user.email,
+      });
+    }
+
+    console.log('Verification response:', response.data);
+    return true; // Return success status
+  } catch (error) {
+    console.error('Error verifying 2FA code:', error);
+    return false; // Return failure status
+  }
 }
 
 export async function generateTwoFactorCodeAPI(email: string) {

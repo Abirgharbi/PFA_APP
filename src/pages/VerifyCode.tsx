@@ -42,10 +42,8 @@ const VerifyCode: React.FC = () => {
 
     setIsLoading(true)
     try {
-      const success = await verifyTwoFactorCode(
-        pendingTwoFactorAuth.userId,
-        verificationCode
-      )
+const success = await verifyTwoFactorCode(pendingTwoFactorAuth.email, verificationCode);
+console.log('Verification result:', success); 
       if (success) {
         toast.success('Verification successful')
         navigate('/dashboard')
@@ -62,7 +60,7 @@ const VerifyCode: React.FC = () => {
   const handleResend = async () => {
     if (!pendingTwoFactorAuth) return
     try {
-      await generateTwoFactorCode(pendingTwoFactorAuth.userId)
+await generateTwoFactorCode(pendingTwoFactorAuth.email);
       toast.success(`Code resent to ${pendingTwoFactorAuth.email}`)
     } catch {
       toast.error('Could not resend code')

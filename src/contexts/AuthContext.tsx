@@ -1,6 +1,15 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { verifyTwoFactorCodeAPI, generateTwoFactorCodeAPI } from '@/services/authService';
-import { Preferences } from '@capacitor/preferences'; // For React Native or web fallback
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  verifyTwoFactorCodeAPI,
+  generateTwoFactorCodeAPI,
+} from '@/services/authService';
+import { Preferences } from '@capacitor/preferences';
 
 type Pending2FA = {
   userId?: string;
@@ -33,27 +42,53 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [pendingTwoFactorAuth, setPendingTwoFactorAuth] = useState<Pending2FA | null>(null);
-  const [loading, setLoading] = useState(true); // To handle the loading state when fetching from storage
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const storedUser = await Preferences.get({ key: 'authUser' }); // React Native or web fallback
-        if (storedUser.value) {
-          setUser(JSON.parse(storedUser.value)); // Parse and set user
+        const [emailRes, nameRes, tokenRes, roleRes, idRes] = await Promise.all([
+          Preferences.get({ key: 'userEmail' }),
+          Preferences.get({ key: 'userName' }),
+          Preferences.get({ key: 'userToken' }),
+          Preferences.get({ key: 'userRole' }),
+          Preferences.get({ key: 'userId' }),
+        ]);
+        const email = emailRes.value;
+        const name = nameRes.value;
+        const token = tokenRes.value;
+        const role = roleRes.value as 'doctor' | 'patient';
+        const id = idRes.value || '';
+
+        if (email && name && token ) {
+          const loadedUser: AuthUser = {
+            id,
+            email,
+            name,
+            token,
+            role,
+          };
+          setUser(loadedUser);
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
+        console.error('Error loading user data from Preferences:', error);
       } finally {
         setLoading(false);
       }
     };
+
     loadUserData();
   }, []);
 
   const loginUser = async (userData: AuthUser) => {
     try {
-      await Preferences.set({ key: 'authUser', value: JSON.stringify(userData) }); // Save user in Preferences
+      await Promise.all([
+        Preferences.set({ key: 'userEmail', value: userData.email }),
+        Preferences.set({ key: 'userName', value: userData.name }),
+        Preferences.set({ key: 'userToken', value: userData.token }),
+        Preferences.set({ key: 'userRole', value: userData.role }),
+        Preferences.set({ key: 'userId', value: userData.id }),
+      ]);
       setUser(userData);
     } catch (error) {
       console.error('Error saving user data:', error);
@@ -62,7 +97,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logoutUser = async () => {
     try {
-      await Preferences.remove({ key: 'authUser' }); // Remove user from Preferences
+      await Promise.all([
+        Preferences.remove({ key: 'userEmail' }),
+        Preferences.remove({ key: 'userName' }),
+        Preferences.remove({ key: 'userToken' }),
+        Preferences.remove({ key: 'userRole' }),
+        Preferences.remove({ key: 'userId' }),
+      ]);
       setUser(null);
       setPendingTwoFactorAuth(null);
     } catch (error) {
@@ -87,11 +128,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const isAuthenticated = !!user;
-  const isDoctor = user?.role === 'doctor';
+  const isAuthenticated = useMemo(() => !!user, [user]);
+  const isDoctor = useMemo(() => user?.role === 'doctor', [user]);
 
   if (loading) {
-    return <div>Loading...</div>; // You can show a loading spinner or other UI
+    return <div>Loading authentication...</div>;
   }
 
   return (

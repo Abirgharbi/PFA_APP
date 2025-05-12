@@ -10,16 +10,18 @@ import ReportCard from '@/components/ReportCard';
 import { getReportsForUser, getNotificationsForUser, Report } from '@/models/report';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Preferences } from '@capacitor/preferences';
 
 const Dashboard: React.FC = () => {
-  const { user, isAuthenticated, isDoctor } = useAuth();
+  const { user, isDoctor } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [reports, setReports] = useState<Report[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-
+console.log('User:', user);
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!user) {
+      console.log('User not authenticated, redirecting to login');
       navigate('/login');
       return;
     }
@@ -32,7 +34,7 @@ const Dashboard: React.FC = () => {
       const userNotifications = getNotificationsForUser(user.id);
       setNotifications(userNotifications);
     }
-  }, [user, isAuthenticated, navigate]);
+  }, [user, navigate]);
 
   const handleShare = (report: Report) => {
     navigate(`/share/${report.id}`);

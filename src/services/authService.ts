@@ -1,8 +1,13 @@
 import { Preferences } from '@capacitor/preferences';
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+
 
 // Backend URL
-const API_URL = 'http://10.0.2.2:3000/api/auth'; // replace with your backend IP if testing on a mobile device
+const API_URL =
+  Capacitor.getPlatform() === 'web'
+    ? 'http://localhost:3000/api/auth'
+    : 'http://10.0.2.2:3000/api/auth'; // your local IP
 
 // Interface User
 interface User {
@@ -45,7 +50,12 @@ export const registerPatient = async (user: User) => {
 // Register Doctor
 export const registerDoctor = async (user: User) => {
   try {
-    const response = await axios.post(`${API_URL}/register/doctor`, user);
+const response = await axios.post(`${API_URL}/register/doctor`, {
+  fullname: user.fullName,
+  email: user.email,
+  password: user.password
+});
+
     const { token } = response.data; // Assuming token is returned after registration
     await saveToken(token); // Save token after successful registration
     return response.data; // user + token
@@ -58,7 +68,7 @@ export const registerDoctor = async (user: User) => {
 // Login
 export async function login(data: { email: string, password: string }) {
   try {
-    const response = await axios.post(`${API_URL}/login`, data);
+        const response = await axios.post(`${API_URL}/login`,data);
     const { token } = response.data; // Assuming token is returned after login
     await saveToken(token); // Save token after successful login
     console.log('Login response:', response.data); 

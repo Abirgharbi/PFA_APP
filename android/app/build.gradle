@@ -1,13 +1,15 @@
+
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.pfa.yourhealthguide"
-    compileSdk rootProject.ext.compileSdkVersion
-    
-      compileOptions {
+    compileOptions {
       sourceCompatibility JavaVersion.VERSION_17
       targetCompatibility JavaVersion.VERSION_17
-  }
+    }
+    namespace "com.pfa.yourhealthguide"
+    compileSdk rootProject.ext.compileSdkVersion
+
+  
     defaultConfig {
         applicationId "com.pfa.yourhealthguide"
         minSdkVersion rootProject.ext.minSdkVersion

@@ -2,7 +2,7 @@ import { Preferences } from '@capacitor/preferences';
 import axios from 'axios';
 
 // Backend URL
-const API_URL = 'http://localhost:3000/api/auth'; // replace with your backend IP if testing on a mobile device
+const API_URL = 'http://10.0.2.2:3000/api/auth'; // replace with your backend IP if testing on a mobile device
 
 // Interface User
 interface User {

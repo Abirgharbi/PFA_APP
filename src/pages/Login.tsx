@@ -65,7 +65,7 @@ const Login: React.FC = () => {
         <div className="w-full max-w-md">
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="text-2xl text-center">Sign in to MediArchive</CardTitle>
+              <CardTitle className="text-2xl text-center">Sign in to our abir</CardTitle>
               <CardDescription className="text-center">Enter your email and password to sign in</CardDescription>
             </CardHeader>
             <CardContent>

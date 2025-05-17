@@ -51,7 +51,7 @@ export const registerPatient = async (user: User) => {
 export const registerDoctor = async (user: User) => {
   try {
 const response = await axios.post(`${API_URL}/register/doctor`, {
-  fullname: user.fullName,
+  fullName: user.fullName,
   email: user.email,
   password: user.password
 });

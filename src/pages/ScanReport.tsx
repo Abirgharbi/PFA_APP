@@ -80,68 +80,48 @@ const ScanReport: React.FC = () => {
     setImageUrl(url);
     setActiveTab('review');
     setIsProcessing(true);
-    console
     
-    try {
-       const data: OCRResponse = await uploadImageForOCR(capturedImage);
     
-    if (!data?.résultats || data.résultats.length === 0) {
-      throw new Error(
-        data.résultats?.length === 0 
-          ? "Aucun résultat détecté dans l'image" 
-          : "Réponse invalide du serveur OCR"
-      );
-    }
-      const formattedData: FormattedOCRData = {
-        patientInfo: {
-          name: data.patientInfo?.nom || '',
-          id: data.patientInfo?.id || '',
-          dateOfBirth: data.patientInfo?.dateNaissance || ''
-        },
-        testResults: data.résultats.map((test) => ({
-          name: test.champ,
-          value: test.valeur,
-          unit: test.unité,
-          normalRange: test.référence,
-          status: test.état.toLowerCase() as 'normal' | 'abnormal'
-        })),
-        diagnosis: '',
-        recommendations: '',
-        processingTime: data.temps
-      };
+ try {
+    const data: OCRResponse = await uploadImageForOCR(capturedImage);
+    console.log('OCR Data:', data);
 
-      setExtractedData(formattedData);
-      setPatientName(formattedData.patientInfo.name);
-      setPatientId(formattedData.patientInfo.id);
-      setTitle(`Analyse sanguine - ${formattedData.patientInfo.name || 'Patient'}`);
-      
-      toast.success('Analyse terminée avec succès', {
-        description: `Temps de traitement: ${data.temps.toFixed(2)} secondes`
-      });
- } catch (error) {
-    console.error('Erreur OCR:', error);
-    const errorMessage = (error as Error).message;
-    
-    let userMessage = "Échec de l'analyse";
-    let description = "Veuillez réessayer avec une image plus claire";
-    
-    if (errorMessage.includes('Erreur serveur (5')) {
-      userMessage = "Problème technique";
-      description = "Notre service rencontre des difficultés. Veuillez réessayer plus tard.";
-    } else if (errorMessage.includes('connexion')) {
-      userMessage = "Problème de connexion";
-      description = "Vérifiez votre connexion internet et réessayez";
+    if (!data || !data.parameters || !Array.isArray(data.parameters)) {
+      throw new Error('Aucun résultat valide trouvé dans la réponse OCR');
     }
 
-    toast.error(userMessage, {
-      description,
-      action: {
-        label: "Nouvel essai",
-        onClick: () => setActiveTab('capture')
+    const formattedData: FormattedOCRData = {
+      patientInfo: {
+        name: data.patientInfo?.nom || '',         // Si `patientInfo` est dans la réponse
+        id: data.patientInfo?.id || '',
+        dateOfBirth: data.patientInfo?.dateNaissance || ''
       },
-      duration: 10000
+      testResults: data.parameters.map((test) => ({
+        name: test.champ,
+        value: test.valeur,
+        unit: test.unité,
+        normalRange: test.référence,
+        status: (test.état === 'Anormal' ? 'abnormal' : 'normal') as 'normal' | 'abnormal'
+      })),
+      diagnosis: '',
+      recommendations: '',
+      processingTime: data.processing_time
+    };
+
+    setExtractedData(formattedData);
+    setPatientName(formattedData.patientInfo.name);
+    setPatientId(formattedData.patientInfo.id);
+    setTitle(`Analyse sanguine - ${formattedData.patientInfo.name || 'Patient'}`);
+
+    toast.success('Analyse terminée avec succès', {
+      description: `Temps de traitement: ${data.processing_time.toFixed(2)} secondes`
     });
 
+  } catch (error) {
+    console.error('Erreur OCR:', error);
+    toast.error('Échec de l\'analyse', {
+      description: (error as Error).message
+    });
     setExtractedData(null);
   } finally {
     setIsProcessing(false);

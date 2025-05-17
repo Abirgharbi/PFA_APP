@@ -29,27 +29,28 @@ export interface OCRResponse {
   };
 }
 
-
 export async function uploadImageForOCR(file: File): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append('image', file);
 
-  // Get token from Capacitor Preferences
   const { value: token } = await Preferences.get({ key: 'userToken' });
 
-  const headers = new Headers();
-  if (token) {
-    headers.append('Authorization', `Bearer ${token}`);
+  if (!token) {
+    throw new Error("No token found. Please log in again.");
   }
 
-  const response = await axios.post(`${API_URL}/api/ocr`, {
-    method: 'POST',
-    headers,
-    body: formData,
+  const response = await axios.post(`${API_URL}/api/ocr`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
-  console.log("Response from OCR API:", response);
-  return response.data as OCRResponse;
 
+  const ocrResult = response.data?.data?.ocrResult;
+
+  if (!ocrResult) {
+    throw new Error("OCR result not found in response.");
+  }
+  
+  return ocrResult as OCRResponse;
 }
-
 

@@ -80,6 +80,7 @@ const ScanReport: React.FC = () => {
     setImageUrl(url);
     setActiveTab('review');
     setIsProcessing(true);
+    console
     
     try {
       const data: OCRResponse = await uploadImageForOCR(capturedImage);

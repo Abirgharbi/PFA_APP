@@ -1,11 +1,12 @@
 // src/services/ocrService.ts
 import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
 // Backend URL
 const API_URL =
   Capacitor.getPlatform() === 'web'
-    ? 'http://localhost:3000/api/auth'
-    : 'http://10.0.2.2:3000/api/auth'; 'http://10.0.2.2:5000'; 
+    ? 'http://localhost:3000'
+    : 'http://10.0.2.2:3000'; 'http://10.0.2.2:5000'; 
 
 
     // src/services/ocrService.ts
@@ -27,14 +28,25 @@ export interface OCRResponse {
   };
 }
 
+
 export async function uploadImageForOCR(file: File): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append('image', file);
 
+  // Get token from Capacitor Preferences
+  const { value: token } = await Preferences.get({ key: 'userToken' });
+
+  const headers = new Headers();
+  if (token) {
+    headers.append('Authorization', `Bearer ${token}`);
+  }
+
   const response = await fetch(`${API_URL}/api/ocr`, {
     method: 'POST',
+    headers,
     body: formData,
   });
+  console.log("Response from OCR API:", response);
 
   if (!response.ok) {
     const error = await response.json();

@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = tokenRes.value;
       const role = roleRes.value as 'doctor' | 'patient';
       const id = idRes.value || '';
-      if (email && name && token) {
+      if (token) {
         const loadedUser: AuthUser = {
           id,
           email,
@@ -114,7 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const verified = await verifyTwoFactorCodeAPI(email, code);
       if (verified) {
-        await loadUserData(); // Now accessible
+        await loadUserData();
+        console.log("loadit") // Now accessible
       }
       return verified;
     } catch (error) {

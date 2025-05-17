@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 const API_URL =
   Capacitor.getPlatform() === 'web'
     ? 'http://localhost:3000/api/auth'
-    : 'http://10.0.2.2:3000/api/auth'; // your local IP
+    : 'http://10.0.2.2:3000/api/auth'; 
 
 // Interface User
 interface User {

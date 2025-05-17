@@ -80,51 +80,53 @@ const ScanReport: React.FC = () => {
     setImageUrl(url);
     setActiveTab('review');
     setIsProcessing(true);
-    console
     
-    try {
-      const data: OCRResponse = await uploadImageForOCR(capturedImage);
-      
-      if (!data?.résultats) {
-        throw new Error('Aucun résultat trouvé dans la réponse OCR');
-      }
+    
+ try {
+    const data: OCRResponse = await uploadImageForOCR(capturedImage);
+    console.log('OCR Data:', data);
 
-      const formattedData: FormattedOCRData = {
-        patientInfo: {
-          name: data.patientInfo?.nom || '',
-          id: data.patientInfo?.id || '',
-          dateOfBirth: data.patientInfo?.dateNaissance || ''
-        },
-        testResults: data.résultats.map((test) => ({
-          name: test.champ,
-          value: test.valeur,
-          unit: test.unité,
-          normalRange: test.référence,
-          status: test.état.toLowerCase() as 'normal' | 'abnormal'
-        })),
-        diagnosis: '',
-        recommendations: '',
-        processingTime: data.temps
-      };
-
-      setExtractedData(formattedData);
-      setPatientName(formattedData.patientInfo.name);
-      setPatientId(formattedData.patientInfo.id);
-      setTitle(`Analyse sanguine - ${formattedData.patientInfo.name || 'Patient'}`);
-      
-      toast.success('Analyse terminée avec succès', {
-        description: `Temps de traitement: ${data.temps.toFixed(2)} secondes`
-      });
-    } catch (error) {
-      console.error('Erreur OCR:', error);
-      toast.error('Échec de l\'analyse', {
-        description: (error as Error).message
-      });
-      setExtractedData(null);
-    } finally {
-      setIsProcessing(false);
+    if (!data || !data.parameters || !Array.isArray(data.parameters)) {
+      throw new Error('Aucun résultat valide trouvé dans la réponse OCR');
     }
-  };
+
+    const formattedData: FormattedOCRData = {
+      patientInfo: {
+        name: data.patientInfo?.nom || '',         // Si `patientInfo` est dans la réponse
+        id: data.patientInfo?.id || '',
+        dateOfBirth: data.patientInfo?.dateNaissance || ''
+      },
+      testResults: data.parameters.map((test) => ({
+        name: test.champ,
+        value: test.valeur,
+        unit: test.unité,
+        normalRange: test.référence,
+        status: (test.état === 'Anormal' ? 'abnormal' : 'normal') as 'normal' | 'abnormal'
+      })),
+      diagnosis: '',
+      recommendations: '',
+      processingTime: data.processing_time
+    };
+
+    setExtractedData(formattedData);
+    setPatientName(formattedData.patientInfo.name);
+    setPatientId(formattedData.patientInfo.id);
+    setTitle(`Analyse sanguine - ${formattedData.patientInfo.name || 'Patient'}`);
+
+    toast.success('Analyse terminée avec succès', {
+      description: `Temps de traitement: ${data.processing_time.toFixed(2)} secondes`
+    });
+
+  } catch (error) {
+    console.error('Erreur OCR:', error);
+    toast.error('Échec de l\'analyse', {
+      description: (error as Error).message
+    });
+    setExtractedData(null);
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const handleSelectFile = (file: File) => {
     handleCapture(file);

@@ -83,12 +83,15 @@ const ScanReport: React.FC = () => {
     console
     
     try {
-      const data: OCRResponse = await uploadImageForOCR(capturedImage);
-      
-      if (!data?.résultats) {
-        throw new Error('Aucun résultat trouvé dans la réponse OCR');
-      }
-
+       const data: OCRResponse = await uploadImageForOCR(capturedImage);
+    
+    if (!data?.résultats || data.résultats.length === 0) {
+      throw new Error(
+        data.résultats?.length === 0 
+          ? "Aucun résultat détecté dans l'image" 
+          : "Réponse invalide du serveur OCR"
+      );
+    }
       const formattedData: FormattedOCRData = {
         patientInfo: {
           name: data.patientInfo?.nom || '',
@@ -115,16 +118,35 @@ const ScanReport: React.FC = () => {
       toast.success('Analyse terminée avec succès', {
         description: `Temps de traitement: ${data.temps.toFixed(2)} secondes`
       });
-    } catch (error) {
-      console.error('Erreur OCR:', error);
-      toast.error('Échec de l\'analyse', {
-        description: (error as Error).message
-      });
-      setExtractedData(null);
-    } finally {
-      setIsProcessing(false);
+ } catch (error) {
+    console.error('Erreur OCR:', error);
+    const errorMessage = (error as Error).message;
+    
+    let userMessage = "Échec de l'analyse";
+    let description = "Veuillez réessayer avec une image plus claire";
+    
+    if (errorMessage.includes('Erreur serveur (5')) {
+      userMessage = "Problème technique";
+      description = "Notre service rencontre des difficultés. Veuillez réessayer plus tard.";
+    } else if (errorMessage.includes('connexion')) {
+      userMessage = "Problème de connexion";
+      description = "Vérifiez votre connexion internet et réessayez";
     }
-  };
+
+    toast.error(userMessage, {
+      description,
+      action: {
+        label: "Nouvel essai",
+        onClick: () => setActiveTab('capture')
+      },
+      duration: 10000
+    });
+
+    setExtractedData(null);
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const handleSelectFile = (file: File) => {
     handleCapture(file);

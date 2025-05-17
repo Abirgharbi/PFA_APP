@@ -49,4 +49,7 @@ export async function uploadImageForOCR(file: File): Promise<OCRResponse> {
   });
   console.log("Response from OCR API:", response);
   return response.data as OCRResponse;
+
 }
+
+

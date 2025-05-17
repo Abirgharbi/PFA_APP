@@ -1,6 +1,7 @@
 // src/services/ocrService.ts
 import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
+import axios from 'axios';
 
 // Backend URL
 const API_URL =
@@ -41,17 +42,11 @@ export async function uploadImageForOCR(file: File): Promise<OCRResponse> {
     headers.append('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}/api/ocr`, {
+  const response = await axios.post(`${API_URL}/api/ocr`, {
     method: 'POST',
     headers,
     body: formData,
   });
   console.log("Response from OCR API:", response);
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Erreur lors de l'analyse OCR");
-  }
-
-  return await response.json();
+  return response.data as OCRResponse;
 }

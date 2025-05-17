@@ -38,45 +38,44 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [pendingTwoFactorAuth, setPendingTwoFactorAuth] = useState<Pending2FA | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const [emailRes, nameRes, tokenRes, roleRes, idRes] = await Promise.all([
-          Preferences.get({ key: 'userEmail' }),
-          Preferences.get({ key: 'userName' }),
-          Preferences.get({ key: 'userToken' }),
-          Preferences.get({ key: 'userRole' }),
-          Preferences.get({ key: 'userId' }),
-        ]);
-        const email = emailRes.value;
-        const name = nameRes.value;
-        const token = tokenRes.value;
-        const role = roleRes.value as 'doctor' | 'patient';
-        const id = idRes.value || '';
-
-        if (email && name && token ) {
-          const loadedUser: AuthUser = {
-            id,
-            email,
-            name,
-            token,
-            role,
-          };
-          setUser(loadedUser);
-        }
-      } catch (error) {
-        console.error('Error loading user data from Preferences:', error);
-      } finally {
-        setLoading(false);
+  // Move this function OUTSIDE of useEffect
+  const loadUserData = async () => {
+    try {
+      const [emailRes, nameRes, tokenRes, roleRes, idRes] = await Promise.all([
+        Preferences.get({ key: 'userEmail' }),
+        Preferences.get({ key: 'userName' }),
+        Preferences.get({ key: 'userToken' }),
+        Preferences.get({ key: 'userRole' }),
+        Preferences.get({ key: 'userId' }),
+      ]);
+      const email = emailRes.value;
+      const name = nameRes.value;
+      const token = tokenRes.value;
+      const role = roleRes.value as 'doctor' | 'patient';
+      const id = idRes.value || '';
+      if (email && name && token) {
+        const loadedUser: AuthUser = {
+          id,
+          email,
+          name,
+          token,
+          role,
+        };
+        setUser(loadedUser);
       }
-    };
+    } catch (error) {
+      console.error('Error loading user data from Preferences:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadUserData();
   }, []);
 
@@ -113,7 +112,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyTwoFactorCode = async (email: string, code: string): Promise<boolean> => {
     try {
-      return await verifyTwoFactorCodeAPI(email, code);
+      const verified = await verifyTwoFactorCodeAPI(email, code);
+      if (verified) {
+        await loadUserData(); // Now accessible
+      }
+      return verified;
     } catch (error) {
       console.error('Error verifying 2FA code:', error);
       return false;

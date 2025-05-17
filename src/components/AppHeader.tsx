@@ -16,7 +16,7 @@ import { getNotificationsForUser } from '@/models/report';
 import { cn } from '@/lib/utils';
 
 const AppHeader: React.FC = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logoutUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -137,7 +137,7 @@ const AppHeader: React.FC = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => logout()}>
+                  <DropdownMenuItem onClick={() => logoutUser()}>
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>

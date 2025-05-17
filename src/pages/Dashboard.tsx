@@ -21,7 +21,6 @@ const Dashboard: React.FC = () => {
 console.log('User:', user);
   useEffect(() => {
     if (!user) {
-      console.log('User not authenticated, redirecting to login');
       navigate('/login');
       return;
     }

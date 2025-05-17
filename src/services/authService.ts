@@ -101,7 +101,6 @@ export const removeToken = async () => {
 
 export async function verifyTwoFactorCodeAPI(email: string, code: string) {
   try {
-    console.log('Verifying 2FA code:', { email, code });
 
     const response = await axios.post(`${API_URL}/verify2FA`, {
       email,
@@ -111,6 +110,7 @@ export async function verifyTwoFactorCodeAPI(email: string, code: string) {
     const { token, user } = response.data;
 
     if (token && user) {
+      console.log("we put it succefuly")
       await Preferences.set({
         key: 'userToken',
         value: token,
@@ -125,7 +125,6 @@ export async function verifyTwoFactorCodeAPI(email: string, code: string) {
       });
     }
 
-    console.log('Verification response:', response.data);
     return true; // Return success status
   } catch (error) {
     console.error('Error verifying 2FA code:', error);

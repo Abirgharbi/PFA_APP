@@ -7,7 +7,7 @@ import axios from 'axios';
 const API_URL =
   Capacitor.getPlatform() === 'web'
     ? 'http://localhost:3000'
-    : 'http://10.0.2.2:3000'; 'http://10.0.2.2:5000'; 
+    : 'http://192.168.1.17:3000'; 
 
 
     // src/services/ocrService.ts
@@ -32,7 +32,7 @@ export interface OCRResponse {
 export async function uploadImageForOCR(file: File): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append('image', file);
-
+  console.log(file)
   const { value: token } = await Preferences.get({ key: 'userToken' });
 
   if (!token) {

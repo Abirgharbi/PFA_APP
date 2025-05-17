@@ -1,128 +1,106 @@
-
 import React, { useRef, useState } from 'react';
-import { CameraCaptureProps } from '@/components/camera/types';
-import { useCamera } from '@/hooks/use-camera';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { CameraView } from '@/components/camera/CameraView';
-import { CapturedImageView } from '@/components/camera/CapturedImageView';
-import { EmptyView } from '@/components/camera/EmptyView';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
-const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onSelectFile }) => {
+interface CameraCaptureProps {
+  onCapture: (file: File) => void;
+}
+
+const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  const {
-    videoRef,
-    canvasRef,
-    isCameraActive,
-    capturedImage,
-    availableCameras,
-    hasCameraPermission,
-    toggleCamera,
-    switchCamera,
-    captureImage,
-    rejectCapturedImage,
-    setCapturedImage,
-    setIsCameraActive,
-    stopCamera
-  } = useCamera();
 
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+const takePhoto = async () => {
+  try {
+    const permissions = await Camera.checkPermissions();
+    if (permissions.camera !== 'granted') {
+      await Camera.requestPermissions({ permissions: ['camera'] });
+    }
 
-  const acceptCapturedImage = () => {
-    if (!canvasRef.current) return;
-    
-    canvasRef.current.toBlob((blob) => {
-      if (!blob) return;
-      
-      const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      
+    const photo = await Camera.getPhoto({
+      resultType: CameraResultType.Base64, // Get base64 string directly
+      source: CameraSource.Camera,
+      quality: 90,
+    });
+
+    if (photo.base64String) {
+      const base64 = photo.base64String;
+
+      // Create a Blob from the base64 string
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      // Create a File from the Blob
+      const file = new File([blob], `photo-${Date.now()}.jpg`, {
+        type: 'image/jpeg',
+      });
+
+      // Set preview for UI
+      setPreviewUrl(`data:image/jpeg;base64,${base64}`);
+
+      // Send file to parent handler (e.g. upload for OCR)
       onCapture(file);
-      
-      setCapturedImage(null);
-    }, 'image/jpeg', 0.95);
-  };
+    }
+  } catch (error) {
+    console.error('Erreur lors de la prise de photo :', error);
+    alert("Impossible d'utiliser la caméra.");
+  }
+};
+
+
 
   const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      alert('Veuillez sélectionner une image valide.');
       return;
     }
-    
-    if (onSelectFile) {
-      onSelectFile(file);
-    }
-    
+
+    const imageUrl = URL.createObjectURL(file);
+    setPreviewUrl(imageUrl);
+
+    onCapture(file);
+
     e.target.value = '';
   };
 
-  const triggerFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-full max-w-md aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileSelection}
+    <div className="flex flex-col items-center space-y-3">
+      {previewUrl && (
+        <img
+          src={previewUrl}
+          alt="Aperçu"
+          style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: 8 }}
         />
-        <canvas ref={canvasRef} className="hidden" />
-        
-        {isCameraActive && (
-          <CameraView
-            videoRef={videoRef}
-            availableCameras={availableCameras}
-            onCapture={captureImage}
-            onSwitchCamera={switchCamera}
-            onClose={toggleCamera}
-          />
-        )}
-        
-        {capturedImage && !isCameraActive && (
-          <CapturedImageView 
-            imageUrl={capturedImage}
-            onAccept={acceptCapturedImage}
-            onReject={rejectCapturedImage}
-          />
-        )}
-        
-        {!isCameraActive && !capturedImage && (
-          <EmptyView
-            onOpenCamera={toggleCamera}
-            onUploadImage={triggerFileInput}
-          />
-        )}
-      </div>
-      
-      {!isCameraActive && !capturedImage && (
-        <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Take a photo of a medical report or upload an existing image</p>
-        </div>
       )}
 
-      {hasCameraPermission === false && (
-        <div className="mt-2 text-center text-sm text-red-500">
-          <p>Camera permission denied. Please check your browser settings.</p>
-        </div>
-      )}
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleFileSelection}
+        className="hidden"
+      />
+
+      <button
+        onClick={takePhoto}
+        className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+      >
+        📷 Prendre une photo
+      </button>
+
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="bg-gray-300 text-black px-4 py-2 rounded-lg"
+      >
+        🖼️ Importer une image
+      </button>
     </div>
   );
 };

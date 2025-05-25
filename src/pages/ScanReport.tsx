@@ -221,7 +221,6 @@ const ScanReport: React.FC = () => {
                     <Label className="mb-2 block">Capturer le document</Label>
                     <CameraCapture 
                       onCapture={handleCapture} 
-                      onSelectFile={handleSelectFile}
                     />
                   </div>
                 </TabsContent>

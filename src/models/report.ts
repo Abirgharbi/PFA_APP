@@ -1,7 +1,105 @@
+export interface Report {
+  _id: string;
+  title?: string;
+  patientId: string;
+  doctorId? : string | "doctor";
+  doctorName? : string;
+  patientName?: string
+  imageUrl: string;
+  reportType? : ReportType;
+  sharedWith? : string[];
+  status? : string;
+  ocrResult: {
+    parameters: {
+      champ: string;
+      référence: string;
+      unité: string;
+      valeur: string;
+      état: string;
+    }[];
+    processing_time: number;
+  };
+  date: string;
+  __v?: number;
+  followUpDate?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-import { User, UserRole } from "../contexts/AuthContext";
+export type ReportType = 'blood_test' | 'imaging' | 'physical_exam' | 'pathology' | 'other';
 
-export interface Patient {
+export const ReportTypes: ReportType[] = [
+  'blood_test',
+  'imaging',
+  'physical_exam',
+  'pathology',
+  'other'
+];
+
+export type ReportStatus = 
+  | "normal" 
+  | "abnormal" 
+  | "critical" 
+  | "pending";
+
+export function getReportTypeLabel(type: ReportType): string {
+  const labels: Record<ReportType, string> = {
+    blood_test: "Blood Test",
+    imaging: "Imaging",
+    physical_exam: "Physical Examination",
+    pathology: "Pathology",
+    other: "Other Report"
+  };
+  return labels[type] || "Unknown";
+}
+
+export function getReportStatusColor(état: string): string {
+  const colors: Record<string, string> = {
+    "Normal": "bg-green-500",
+    "Anormal": "bg-yellow-500",
+    "Intervalle inconnu": "bg-blue-500",
+    "Critical": "bg-red-500"
+  };
+  return colors[état] || "bg-gray-500";
+}
+
+export function getTestResultColor(état?: string): string {
+  if (!état) return "text-gray-600";
+  
+  const colors = {
+    "Normal": "text-green-600",
+    "Anormal": "text-yellow-600",
+    "Intervalle inconnu": "text-blue-600",
+    "Critical": "text-red-600"
+  };
+  
+  return colors[état] || "text-gray-600";
+}
+
+//--------------------------------------------------//
+
+
+export interface TestResult {
+  name: string;
+  value: string;
+  unit?: string;
+  normalRange?: string;
+  status?: "normal" | "abnormal" | "critical";
+} 
+export interface ExtractedData {
+  patientInfo: {
+    name?: string;
+    id?: string;
+    dateOfBirth?: string;
+    gender?: string;
+  };
+  testResults: TestResult[];
+  diagnosis?: string;
+  recommendations?: string;
+}
+
+export interface Patient1 {
   id: string;
   name: string;
   email: string;
@@ -11,7 +109,7 @@ export interface Patient {
   profileImage?: string;
 }
 
-export interface Doctor {
+export interface Doctor1 {
   id: string;
   name: string;
   email: string;
@@ -20,7 +118,7 @@ export interface Doctor {
   profileImage?: string;
 }
 
-export interface Report {
+export interface Report1 {
   id: string;
   title: string;
   patientId: string;
@@ -39,88 +137,7 @@ export interface Report {
   updatedAt: string;
 }
 
-export type ReportType = 
-  | "blood_test" 
-  | "imaging" 
-  | "physical_exam" 
-  | "pathology" 
-  | "other";
-
-export type ReportStatus = 
-  | "normal" 
-  | "abnormal" 
-  | "critical" 
-  | "pending";
-
-export interface ExtractedData {
-  patientInfo: {
-    name?: string;
-    id?: string;
-    dateOfBirth?: string;
-    gender?: string;
-  };
-  testResults: TestResult[];
-  diagnosis?: string;
-  recommendations?: string;
-}
-
-export interface TestResult {
-  name: string;
-  value: string;
-  unit?: string;
-  normalRange?: string;
-  status?: "normal" | "abnormal" | "critical";
-}
-
-export interface Notification {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  type: "info" | "warning" | "success" | "error";
-  read: boolean;
-  reportId?: string;
-  createdAt: string;
-}
-
-// Helper function to get report type display name
-export function getReportTypeLabel(type: ReportType): string {
-  const labels: Record<ReportType, string> = {
-    blood_test: "Blood Test",
-    imaging: "Imaging",
-    physical_exam: "Physical Examination",
-    pathology: "Pathology",
-    other: "Other Report"
-  };
-  return labels[type] || "Unknown";
-}
-
-// Helper function to get report status colors
-export function getReportStatusColor(status: ReportStatus): string {
-  const colors: Record<ReportStatus, string> = {
-    normal: "bg-green-500",
-    abnormal: "bg-yellow-500",
-    critical: "bg-red-500",
-    pending: "bg-blue-500"
-  };
-  return colors[status] || "bg-gray-500";
-}
-
-// Helper to get test result status color
-export function getTestResultColor(status?: "normal" | "abnormal" | "critical"): string {
-  if (!status) return "text-gray-600";
-  
-  const colors = {
-    normal: "text-green-600",
-    abnormal: "text-yellow-600",
-    critical: "text-red-600"
-  };
-  
-  return colors[status];
-}
-
-// Mock data
-export const mockReports: Report[] = [
+export const mockReports: Report1[] = [
   {
     id: "r1",
     title: "Annual Blood Test Results",
@@ -223,49 +240,3 @@ export const mockReports: Report[] = [
     updatedAt: "2025-02-12T14:15:00Z"
   }
 ];
-
-export const mockNotifications: Notification[] = [
-  {
-    id: "n1",
-    userId: "p1",
-    title: "Follow-up Required",
-    message: "Your chest X-ray requires a follow-up in 3 months (May 12, 2025)",
-    type: "warning",
-    read: false,
-    reportId: "r2",
-    createdAt: "2025-02-12T14:30:00Z"
-  },
-  {
-    id: "n2",
-    userId: "p1",
-    title: "Annual Check-up Due",
-    message: "Your annual blood test is due next month",
-    type: "info",
-    read: true,
-    createdAt: "2025-03-01T09:00:00Z"
-  },
-  {
-    id: "n3",
-    userId: "d1",
-    title: "Report Shared",
-    message: "Dr. Michael Chen shared a chest X-ray report with you",
-    type: "info",
-    read: false,
-    reportId: "r2",
-    createdAt: "2025-02-12T14:20:00Z"
-  }
-];
-
-// Function to get reports for a user
-export function getReportsForUser(userId: string, role: UserRole): Report[] {
-  if (role === "doctor") {
-    return mockReports.filter(report => report.doctorId === userId || report.sharedWith.includes(userId));
-  } else {
-    return mockReports.filter(report => report.patientId === userId);
-  }
-}
-
-// Function to get notifications for a user
-export function getNotificationsForUser(userId: string): Notification[] {
-  return mockNotifications.filter(notification => notification.userId === userId);
-}

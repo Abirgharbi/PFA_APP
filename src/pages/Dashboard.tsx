@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppHeader from '@/components/AppHeader';
 import ReportCard from '@/components/ReportCard';
-import { getReportsForUser, getNotificationsForUser, Report } from '@/models/report';
+import { Report } from '@/models/report';
+import { getReportsForUser } from '@/services/archiveService';
+import { getNotificationsForUser } from '@/services/notificationService';
+
+
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Preferences } from '@capacitor/preferences';
@@ -18,26 +22,46 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   const [reports, setReports] = useState<Report[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+   const [loading, setLoading] = useState(true);
+
 console.log('User:', user);
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
-    
-    // Load reports and notifications if user is authenticated
-    if (user) {
-      const userReports = getReportsForUser(user.id, user.role);
-      setReports(userReports);
-      
-      const userNotifications = getNotificationsForUser(user.id);
-      setNotifications(userNotifications);
-    }
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load reports from API
+        if (user?.token) {
+          const reportsData = await getReportsForUser(user.token);
+          setReports(reportsData);
+          
+          // // Load notifications from API
+          // const notificationsData = await getNotificationsForUser(user._id, user.token);
+          // setNotifications(notificationsData);
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [user, navigate]);
 
   const handleShare = (report: Report) => {
-    navigate(`/share/${report.id}`);
+    navigate(`/share/${report._id}`, { state: { report } });
   };
+
+  if (loading) {
+    return <div>Loading dashboard...</div>;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -100,9 +124,10 @@ console.log('User:', user);
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {reports.slice(0, 4).map((report) => (
                         <ReportCard 
-                          key={report.id} 
+                          key={report._id}
                           report={report} 
-                          onShare={handleShare}
+                          view={'grid'}   
+                          onShare={handleShare}                    
                         />
                       ))}
                     </div>
@@ -218,9 +243,9 @@ console.log('User:', user);
                         .slice(0, 3)
                         .map(report => (
                           <div 
-                            key={report.id}
+                            key={report._id}
                             className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
-                            onClick={() => navigate(`/report/${report.id}`)}
+                            onClick={() => navigate(`/report/${report._id}`)}
                           >
                             <div className="mr-3 bg-medical/10 text-medical p-2 rounded-md">
                               <Calendar className="h-4 w-4" />

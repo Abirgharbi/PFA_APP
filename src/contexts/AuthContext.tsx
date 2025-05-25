@@ -18,11 +18,12 @@ type Pending2FA = {
 };
 
 type AuthUser = {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: 'doctor' | 'patient';
   token: string;
+  profileImage?: string;
 };
 
 type AuthContextType = {
@@ -57,10 +58,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const name = nameRes.value;
       const token = tokenRes.value;
       const role = roleRes.value as 'doctor' | 'patient';
-      const id = idRes.value || '';
+      const _id = idRes.value || '';
       if (token) {
         const loadedUser: AuthUser = {
-          id,
+          _id,
           email,
           name,
           token,
@@ -86,7 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         Preferences.set({ key: 'userName', value: userData.name }),
         Preferences.set({ key: 'userToken', value: userData.token }),
         Preferences.set({ key: 'userRole', value: userData.role }),
-        Preferences.set({ key: 'userId', value: userData.id }),
+        Preferences.set({ key: 'userId', value: userData._id }),
+        console.log(userData)
       ]);
       setUser(userData);
     } catch (error) {

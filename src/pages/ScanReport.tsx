@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ReportType, mockReports } from '@/models/report';
+import { ReportType } from '@/models/report';
 import { uploadImageForOCR } from '@/services/ocrService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -86,7 +86,7 @@ const ScanReport: React.FC = () => {
     const data: OCRResponse = await uploadImageForOCR(capturedImage);
     console.log('OCR Data:', data);
 
-    if (!data || !data.parameters || !Array.isArray(data.parameters)) {
+    if (!data || !data.résultats || !Array.isArray(data.résultats)) {
       throw new Error('Aucun résultat valide trouvé dans la réponse OCR');
     }
 
@@ -96,7 +96,7 @@ const ScanReport: React.FC = () => {
         id: data.patientInfo?.id || '',
         dateOfBirth: data.patientInfo?.dateNaissance || ''
       },
-      testResults: data.parameters.map((test) => ({
+      testResults: data.résultats.map((test) => ({
         name: test.champ,
         value: test.valeur,
         unit: test.unité,
@@ -105,7 +105,7 @@ const ScanReport: React.FC = () => {
       })),
       diagnosis: '',
       recommendations: '',
-      processingTime: data.processing_time
+      processingTime: data.temps
     };
 
     setExtractedData(formattedData);
@@ -114,7 +114,7 @@ const ScanReport: React.FC = () => {
     setTitle(`Analyse sanguine - ${formattedData.patientInfo.name || 'Patient'}`);
 
     toast.success('Analyse terminée avec succès', {
-      description: `Temps de traitement: ${data.processing_time.toFixed(2)} secondes`
+      description: `Temps de traitement: ${data.temps.toFixed(2)} secondes`
     });
 
   } catch (error) {
@@ -140,7 +140,7 @@ const ScanReport: React.FC = () => {
       imageUrl,
       type: reportType,
       title: title || `Rapport du ${new Date().toLocaleDateString()}`,
-      doctorId: user.id,
+      doctorId: user._id,
       doctorName: user.name || 'Dr. Inconnu',
       patientId: patientId || extractedData.patientInfo.id || 'N/A',
       patientName: patientName || extractedData.patientInfo.name || 'Patient Inconnu',
@@ -165,7 +165,7 @@ const ScanReport: React.FC = () => {
         throw new Error('Données du rapport manquantes');
       }
 
-      mockReports.unshift(newReport);
+
       toast.success('Rapport enregistré avec succès');
       navigate(`/report/${newReport.id}`);
     } catch (error) {

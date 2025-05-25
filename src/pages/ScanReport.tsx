@@ -74,38 +74,43 @@ const ScanReport: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
   
-  const handleCapture = async (capturedImage: File) => {
-    setImage(capturedImage);
-    const url = URL.createObjectURL(capturedImage);
-    setImageUrl(url);
-    setActiveTab('review');
-    setIsProcessing(true);
-    
-    
- try {
+const handleCapture = async (capturedImage: File) => {
+  setImage(capturedImage);
+  const url = URL.createObjectURL(capturedImage);
+  setImageUrl(url);
+  setActiveTab('review');
+  setIsProcessing(true);
+
+  try {
+    // Call your OCR upload function that returns the OCRResponse interface
     const data: OCRResponse = await uploadImageForOCR(capturedImage);
     console.log('OCR Data:', data);
 
-    if (!data || !data.résultats || !Array.isArray(data.résultats)) {
+    // Validate OCR data - the OCRResponse has tables: { [category: string]: OCRTestResult[] }
+    if (!data || !data.tables) {
       throw new Error('Aucun résultat valide trouvé dans la réponse OCR');
     }
 
+    // Flatten all test results from all categories into a single array
+    const allTestResults: OCRTestResult[] = Object.values(data.tables).flat();
+
+    // Format the data to your UI needs
     const formattedData: FormattedOCRData = {
       patientInfo: {
-        name: data.patientInfo?.nom || '',         // Si `patientInfo` est dans la réponse
-        id: data.patientInfo?.id || '',
-        dateOfBirth: data.patientInfo?.dateNaissance || ''
+        name: data.patient_info?.name || '',
+        id: '', // No patient ID in the current OCR response; can be empty or extended if available
+        dateOfBirth: '', // Also missing from the OCR response unless you add it in backend
       },
-      testResults: data.résultats.map((test) => ({
+      testResults: allTestResults.map((test) => ({
         name: test.champ,
         value: test.valeur,
-        unit: test.unité,
-        normalRange: test.référence,
-        status: (test.état === 'Anormal' ? 'abnormal' : 'normal') as 'normal' | 'abnormal'
+        unit: test.unité || '',
+        normalRange: test.Valeurs_usuelles || '',
+        status: (test.état === 'Anormal' ? 'abnormal' : 'normal') as 'normal' | 'abnormal',
       })),
       diagnosis: '',
       recommendations: '',
-      processingTime: data.temps
+      processingTime: data.processing_time,
     };
 
     setExtractedData(formattedData);
@@ -114,19 +119,19 @@ const ScanReport: React.FC = () => {
     setTitle(`Analyse sanguine - ${formattedData.patientInfo.name || 'Patient'}`);
 
     toast.success('Analyse terminée avec succès', {
-      description: `Temps de traitement: ${data.temps.toFixed(2)} secondes`
+      description: `Temps de traitement: ${data.processing_time.toFixed(2)} secondes`,
     });
-
   } catch (error) {
     console.error('Erreur OCR:', error);
     toast.error('Échec de l\'analyse', {
-      description: (error as Error).message
+      description: (error as Error).message,
     });
     setExtractedData(null);
   } finally {
     setIsProcessing(false);
   }
 };
+
 
   const handleSelectFile = (file: File) => {
     handleCapture(file);

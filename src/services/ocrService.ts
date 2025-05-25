@@ -36,9 +36,10 @@ export interface OCRResponse {
 }
 
 // Upload image and retrieve OCR response
-export async function uploadImageForOCR(file: File): Promise<OCRResponse> {
+export async function uploadImageForOCR(file: File, reportType: string): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append('image', file);
+  formData.append('reportType', reportType);
 
   // Retrieve stored auth token
   const { value: token } = await Preferences.get({ key: 'userToken' });

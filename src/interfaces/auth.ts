@@ -1,4 +1,3 @@
-// src/interfaces/auth.ts
 export interface AuthUser {
   id: string;
   name: string;

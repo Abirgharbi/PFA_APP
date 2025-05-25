@@ -17,19 +17,27 @@ import CameraCapture from '@/components/CameraCapture';
 
 interface OCRTestResult {
   champ: string;
-  valeur: string;
-  unité: string;
-  référence: string;
-  état: 'Normal' | 'Anormal';
+  valeur_and_unite: string;
+  valeur?: string;
+  unité?: string;
+  Valeurs_usuelles?: string;
+  état?: 'Normal' | 'Anormal' | 'inconnu';
+
+  // Accept any number of anteriorite fields dynamically
+  [key: `anteriorite ${number}`]: string | undefined;
 }
 
+
 interface OCRResponse {
-  résultats: OCRTestResult[];
-  temps: number;
-  patientInfo?: {
-    nom?: string;
-    id?: string;
-    dateNaissance?: string;
+  Edite_date: string;
+  processing_time: number;
+  status: string;
+  patient_info: {
+    name: string;
+    title: string;
+  };
+  tables: {
+    [category: string]: OCRTestResult[];
   };
 }
 
@@ -39,17 +47,20 @@ interface FormattedOCRData {
     id: string;
     dateOfBirth: string;
   };
-  testResults: {
-    name: string;
-    value: string;
-    unit: string;
-    normalRange: string;
-    status: 'normal' | 'abnormal';
-  }[];
+  testResultsByCategory: {
+    [category: string]: {
+      name: string;
+      value: string;
+      unit: string;
+      normalRange: string;
+      status: 'normal' | 'abnormal';
+    }[];
+  };
   diagnosis: string;
   recommendations: string;
   processingTime?: number;
 }
+
 
 const ScanReport: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -67,6 +78,7 @@ const ScanReport: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<FormattedOCRData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   
   React.useEffect(() => {
     if (!isAuthenticated) {
@@ -74,44 +86,46 @@ const ScanReport: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
   
-const handleCapture = async (capturedImage: File) => {
-  setImage(capturedImage);
-  const url = URL.createObjectURL(capturedImage);
+const handleCapture = async () => {
+  const url = URL.createObjectURL(image);
   setImageUrl(url);
   setActiveTab('review');
   setIsProcessing(true);
-
   try {
     // Call your OCR upload function that returns the OCRResponse interface
-    const data: OCRResponse = await uploadImageForOCR(capturedImage);
+    const data: OCRResponse = await uploadImageForOCR(image as File,reportType);
     console.log('OCR Data:', data);
-
     // Validate OCR data - the OCRResponse has tables: { [category: string]: OCRTestResult[] }
-    if (!data || !data.tables) {
-      throw new Error('Aucun résultat valide trouvé dans la réponse OCR');
-    }
+if (data.status !== 'success') {
+  throw new Error(`OCR échoué: ${data.status}`);
+}
 
     // Flatten all test results from all categories into a single array
     const allTestResults: OCRTestResult[] = Object.values(data.tables).flat();
 
     // Format the data to your UI needs
-    const formattedData: FormattedOCRData = {
-      patientInfo: {
-        name: data.patient_info?.name || '',
-        id: '', // No patient ID in the current OCR response; can be empty or extended if available
-        dateOfBirth: '', // Also missing from the OCR response unless you add it in backend
-      },
-      testResults: allTestResults.map((test) => ({
-        name: test.champ,
-        value: test.valeur,
-        unit: test.unité || '',
-        normalRange: test.Valeurs_usuelles || '',
-        status: (test.état === 'Anormal' ? 'abnormal' : 'normal') as 'normal' | 'abnormal',
-      })),
-      diagnosis: '',
-      recommendations: '',
-      processingTime: data.processing_time,
-    };
+const formattedData: FormattedOCRData = {
+  patientInfo: {
+    name: data.patient_info?.name || '',
+    id: '',
+    dateOfBirth: '',
+  },
+  testResultsByCategory: {},
+  diagnosis: '',
+  recommendations: '',
+  processingTime: data.processing_time,
+};
+// Loop over each category and its array of test results
+for (const [category, results] of Object.entries(data.tables)) {
+  formattedData.testResultsByCategory[category] = results.map((test) => ({
+    name: test.champ,
+    value: test.valeur,
+    unit: test.unité || '',
+    normalRange: test.Valeurs_usuelles || '',
+    status: (test.état === 'Anormal' ? 'abnormal' : 'normal'),
+  }));
+}
+
 
     setExtractedData(formattedData);
     setPatientName(formattedData.patientInfo.name);
@@ -134,7 +148,7 @@ const handleCapture = async (capturedImage: File) => {
 
 
   const handleSelectFile = (file: File) => {
-    handleCapture(file);
+      setImage(file);
   };
   
   const createReportFromExtractedData = (): any => {
@@ -150,12 +164,10 @@ const handleCapture = async (capturedImage: File) => {
       patientId: patientId || extractedData.patientInfo.id || 'N/A',
       patientName: patientName || extractedData.patientInfo.name || 'Patient Inconnu',
       date: new Date().toISOString(),
-      testResults: extractedData.testResults,
       diagnosis: '',
       recommendations: '',
       notes,
       status: 'completed',
-      processingTime: extractedData.processingTime
     };
   };
   
@@ -214,9 +226,9 @@ const handleCapture = async (capturedImage: File) => {
                         <SelectValue placeholder="Sélectionner un type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="blood_test">Analyse sanguine</SelectItem>
+                        <SelectItem value="Analyse sanguine">Analyse sanguine</SelectItem>
                         <SelectItem value="imaging">Imagerie</SelectItem>
-                        <SelectItem value="physical_exam">Examen clinique</SelectItem>
+                        <SelectItem value="Examen clinique">Examen clinique</SelectItem>
                         <SelectItem value="other">Autre</SelectItem>
                       </SelectContent>
                     </Select>
@@ -225,7 +237,7 @@ const handleCapture = async (capturedImage: File) => {
                   <div className="mb-6">
                     <Label className="mb-2 block">Capturer le document</Label>
                     <CameraCapture 
-                      onCapture={handleCapture} 
+                      onCapture={handleSelectFile} 
                     />
                   </div>
                 </TabsContent>
@@ -260,14 +272,14 @@ const handleCapture = async (capturedImage: File) => {
                           <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-2" />
                           <p className="text-sm text-gray-600">Analyse en cours...</p>
                         </div>
-                      ) : extractedData ? (
+                      ) : extractedData ?(
                         <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                           <div className="flex items-center mb-2">
                             <Check className="h-5 w-5 text-green-500 mr-2" />
                             <span className="font-medium">Analyse réussie</span>
                           </div>
                           <p className="text-sm text-gray-600">
-                            {extractedData.testResults.length} paramètres détectés
+                            {Object.values(extractedData.testResultsByCategory).flat().length}  paramètres détectés
                           </p>
                           {extractedData.processingTime && (
                             <p className="text-xs text-gray-500 mt-1">
@@ -275,7 +287,7 @@ const handleCapture = async (capturedImage: File) => {
                             </p>
                           )}
                         </div>
-                      ) : (
+                      )  : (
                         <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                           <div className="flex items-center mb-2">
                             <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
@@ -311,16 +323,7 @@ const handleCapture = async (capturedImage: File) => {
                             disabled={isProcessing}
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="patientId">Identifiant patient</Label>
-                          <Input 
-                            id="patientId"
-                            value={patientId}
-                            onChange={(e) => setPatientId(e.target.value)}
-                            placeholder="ID ou N° de dossier"
-                            disabled={isProcessing}
-                          />
-                        </div>
+
                         <div>
                           <Label htmlFor="notes">Notes complémentaires</Label>
                           <Textarea 
@@ -339,96 +342,74 @@ const handleCapture = async (capturedImage: File) => {
               </Tabs>
             </CardContent>
             <CardFooter className="flex justify-between pt-6">
-              <Button 
+                            <Button 
                 variant="outline"
                 onClick={() => navigate(-1)}
               >
                 Annuler
               </Button>
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={handleSubmit}
-                disabled={isProcessing || isSubmitting || !extractedData}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enregistrement...
-                  </>
-                ) : 'Enregistrer le rapport'}
-              </Button>
-            </CardFooter>
+  {activeTab === 'capture' ? (
+    <Button
+      className="bg-blue-600 hover:bg-blue-700"
+  onClick={() => image && handleCapture()}
+      disabled={!image}
+    >
+      Extraire les données
+    </Button>
+  ) : (
+    <Button
+      className="bg-blue-600 hover:bg-blue-700"
+      onClick={handleSubmit}
+      disabled={isProcessing || isSubmitting || !extractedData}
+    >
+      {isSubmitting ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Enregistrement...
+        </>
+      ) : 'Enregistrer le rapport'}
+    </Button>
+  )}
+</CardFooter>
           </Card>
           
           {extractedData && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Résultats d'analyse</CardTitle>
-                <CardDescription>
-                  Données extraites du document scanné
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {extractedData.patientInfo.name && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Informations patient</h3>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-500">Nom</p>
-                            <p className="font-medium">{extractedData.patientInfo.name}</p>
-                          </div>
-                          {extractedData.patientInfo.id && (
-                            <div>
-                              <p className="text-sm text-gray-500">Identifiant</p>
-                              <p className="font-medium">{extractedData.patientInfo.id}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Paramètres biologiques</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paramètre</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valeur</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unité</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valeurs de référence</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {extractedData.testResults.map((result, index) => (
-                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{result.name}</td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-semibold">{result.value}</td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{result.unit || '-'}</td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{result.normalRange}</td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  result.status === 'normal' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {result.status === 'normal' ? 'Normal' : 'Anormal'}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+  <div className="mt-6">
+    <h3 className="text-lg font-semibold mb-2">Résultats extraits</h3>
+    
+    {Object.entries(extractedData.testResultsByCategory).map(([category, results]) => (
+      <div key={category} className="mb-6 border rounded-lg p-4 bg-white shadow-sm">
+        <h4 className="text-md font-semibold mb-2">{category}</h4>
+        <table className="w-full text-sm table-auto border-collapse">
+          <thead>
+            <tr className="border-b bg-gray-100">
+              <th className="p-2 text-left">Paramètre</th>
+              <th className="p-2 text-left">Valeur</th>
+              <th className="p-2 text-left">Unité</th>
+              <th className="p-2 text-left">Valeurs usuelles</th>
+              <th className="p-2 text-left">État</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((result, index) => (
+              <tr key={index} className="border-b">
+                <td className="p-2">{result.name}</td>
+                <td className="p-2">{result.value}</td>
+                <td className="p-2">{result.unit}</td>
+                <td className="p-2">{result.normalRange}</td>
+                <td className="p-2">
+                  <span className={result.status === 'abnormal' ? 'text-red-600 font-medium' : 'text-green-600'}>
+                    {result.status === 'abnormal' ? 'Anormal' : 'Normal'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ))}
+  </div>
+)}
         </div>
       </main>
     </div>

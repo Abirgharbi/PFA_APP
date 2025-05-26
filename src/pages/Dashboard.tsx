@@ -22,9 +22,9 @@ const Dashboard: React.FC = () => {
   const isMobile = useIsMobile();
   const [reports, setReports] = useState<Report[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-   const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-console.log('User:', user);
+  console.log('User:', user);
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -34,12 +34,12 @@ console.log('User:', user);
     const loadData = async () => {
       try {
         setLoading(true);
-        
+
         // Load reports from API
         if (user?.token) {
           const reportsData = await getReportsForUser(user.token);
           setReports(reportsData);
-          
+
           // // Load notifications from API
           // const notificationsData = await getNotificationsForUser(user._id, user.token);
           // setNotifications(notificationsData);
@@ -73,7 +73,6 @@ console.log('User:', user);
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader />
-      
       <main className="flex-1 px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Welcome section */}
@@ -82,21 +81,21 @@ console.log('User:', user);
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}</h1>
                 <p className="text-gray-600 mt-1">
-                  {isDoctor 
+                  {isDoctor
                     ? "Manage your patients' medical records and reports"
                     : "Track your medical reports and follow-ups"}
                 </p>
               </div>
               <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-                <Button 
+                <Button
                   onClick={() => navigate('/scan')}
                   className="bg-medical hover:bg-medical-dark"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {isMobile ? 'Scan Report' : 'Scan New Report'}
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/archive')}
                 >
                   <FileText className="h-4 w-4 mr-2" />
@@ -105,7 +104,7 @@ console.log('User:', user);
               </div>
             </div>
           </section>
-          
+
           {/* Dashboard grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main content - Recent Reports */}
@@ -118,7 +117,7 @@ console.log('User:', user);
                       Your most recent medical reports
                     </CardDescription>
                   </div>
-                  <Button 
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => navigate('/archive')}
@@ -130,11 +129,11 @@ console.log('User:', user);
                   {reports.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {reports.slice(0, 4).map((report) => (
-                        <ReportCard 
+                        <ReportCard
                           key={report._id}
-                          report={report} 
-                          view={'grid'}   
-                          onShare={handleShare}                    
+                          report={report}
+                          view={'grid'}
+                          onShare={handleShare}
                         />
                       ))}
                     </div>
@@ -153,22 +152,22 @@ console.log('User:', user);
                   )}
                 </CardContent>
               </Card>
-              
+
               {/* Quick Actions */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <QuickActionCard 
+                <QuickActionCard
                   icon={<Upload className="h-6 w-6 text-medical" />}
                   title="Scan Report"
                   description="Digitize a new medical report"
                   onClick={() => navigate('/scan')}
                 />
-                <QuickActionCard 
+                <QuickActionCard
                   icon={<FileText className="h-6 w-6 text-patient" />}
                   title="Browse Archive"
                   description="View all your medical records"
                   onClick={() => navigate('/archive')}
                 />
-                <QuickActionCard 
+                <QuickActionCard
                   icon={<Share2 className="h-6 w-6 text-emerald-500" />}
                   title="Share Reports"
                   description="Share reports with others"
@@ -176,7 +175,7 @@ console.log('User:', user);
                 />
               </div>
             </div>
-            
+
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Notifications */}
@@ -188,7 +187,7 @@ console.log('User:', user);
                   {notifications.length > 0 ? (
                     <div className="space-y-2">
                       {notifications.map((notification) => (
-                        <div 
+                        <div
                           key={notification.id}
                           className="flex p-2 hover:bg-gray-50 rounded-md cursor-pointer"
                           onClick={() => {
@@ -197,13 +196,12 @@ console.log('User:', user);
                             }
                           }}
                         >
-                          <div 
-                            className={`w-2 h-2 rounded-full mt-2 mr-3 ${
-                              notification.type === 'warning' ? 'bg-yellow-500' :
+                          <div
+                            className={`w-2 h-2 rounded-full mt-2 mr-3 ${notification.type === 'warning' ? 'bg-yellow-500' :
                               notification.type === 'error' ? 'bg-red-500' :
-                              notification.type === 'success' ? 'bg-green-500' :
-                              'bg-blue-500'
-                            }`}
+                                notification.type === 'success' ? 'bg-green-500' :
+                                  'bg-blue-500'
+                              }`}
                           />
                           <div>
                             <p className="font-medium text-sm">{notification.title}</p>
@@ -223,8 +221,8 @@ console.log('User:', user);
                 </CardContent>
                 {notifications.length > 0 && (
                   <CardFooter>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="w-full"
                       onClick={() => toast.info("Viewing all notifications is not implemented in this demo")}
                     >
@@ -233,7 +231,7 @@ console.log('User:', user);
                   </CardFooter>
                 )}
               </Card>
-              
+
               {/* Follow-up Calendar */}
               <Card>
                 <CardHeader>
@@ -249,7 +247,7 @@ console.log('User:', user);
                         .filter(r => r.followUpDate)
                         .slice(0, 3)
                         .map(report => (
-                          <div 
+                          <div
                             key={report._id}
                             className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
                             onClick={() => navigate(`/report/${report._id}`)}

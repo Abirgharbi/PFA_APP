@@ -74,7 +74,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-medical text-white">
             <span className="font-bold text-lg">M</span>
           </div>
-          <span className="hidden sm:block text-lg font-semibold text-medical-dark">MediArchive</span>
+          <span className="hidden sm:block text-lg font-semibold text-medical-dark">MediOCR</span>
         </Link>
 
         {/* Desktop Navigation */}

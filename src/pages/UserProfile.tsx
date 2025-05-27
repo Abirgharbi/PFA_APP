@@ -58,7 +58,7 @@ const UserProfile: React.FC = () => {
         email: user.email,
         specialization: user.role === 'doctor' ? 'Cardiologist' : '',
         hospital: user.role === 'doctor' ? 'Central Hospital' : '',
-        bio: 'Healthcare professional with over 10 years of experience.'
+        bio: ''
       });
     }
   }, [user, isAuthenticated, navigate]);
@@ -179,9 +179,6 @@ const UserProfile: React.FC = () => {
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 text-center">
-                      JPG, GIF or PNG. Max size 1MB.
-                    </p>
                   </CardContent>
                 </Card>
                 

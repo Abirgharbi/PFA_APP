@@ -67,6 +67,7 @@ const Login: React.FC = () => {
             <CardHeader>
               <CardTitle className="text-2xl text-center">Sign in to our abir</CardTitle>
               <CardDescription className="text-center">Enter your email and password to sign in</CardDescription>
+
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="doctor" onValueChange={(v) => setRole(v as 'doctor' | 'patient')}>
@@ -100,6 +101,7 @@ const Login: React.FC = () => {
                   <Button variant="outline" onClick={() => setDemoCredentials('patient')} className="text-xs">Use Patient Demo</Button>
                 </div>
               </div>
+
             </CardContent>
             <CardFooter>
               <p className="text-center text-sm text-gray-600 mt-2 w-full">

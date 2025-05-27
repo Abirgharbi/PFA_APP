@@ -180,6 +180,7 @@ const copyShareLink = () => {
     } finally {
       setIsSharing(false);
     }
+
   };
 
   const validateEmail = (email: string) => {
@@ -431,6 +432,7 @@ const copyShareLink = () => {
                           </>
                         )}
                       </Button>
+
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       Anyone with this link can view the report.

@@ -96,7 +96,7 @@ const Register: React.FC = () => {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    placeholder="John Doe"
+                    placeholder="Abir Gharbi"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -107,7 +107,7 @@ const Register: React.FC = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="name@example.com"
+                    placeholder="orsowen@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required

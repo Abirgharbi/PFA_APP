@@ -20,6 +20,8 @@ import NotFound from "./pages/NotFound";
 import VerifyCode from "./pages/VerifyCode";
 import { useIsMobile } from "./hooks/use-mobile";
 import ReportsAnalytics from "./pages/ReportsAnalytics";
+import SharedReportView from "./pages/SharedReportView";
+import SharedReportPage from "./pages/SharedReportPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +64,7 @@ const App = () => {
               <Route path="/patients/:id/reports" element={<PatientReports />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
+              <Route path="/shared/:id" element={<SharedReportView />} />
             </Routes>
           </AuthProvider>
         </BrowserRouter>

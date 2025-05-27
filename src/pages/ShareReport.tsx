@@ -11,7 +11,8 @@ import {
   Search,
   X,
   User,
-  CalendarDays
+  Image,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,31 +29,31 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Report } from '@/models/report';
 import AppHeader from '@/components/AppHeader';
 import { cn } from '@/lib/utils';
+import { getReportById, shareByEmail } from '@/services/archiveService';
+import axios from 'axios';
 
-// Mock data pour les utilisateurs disponibles pour le partage
-const mockUsers = [
-  {
-    _id: 'd1',
-    name: 'Dr. Sarah Johnson',
-    email: 'doctor@example.com',
-    profileImage: 'https://i.pravatar.cc/300?img=1'
-  },
-  {
-    _id: 'd2',
-    name: 'Dr. Michael Chen',
-    email: 'doctor2@example.com',
-    profileImage: 'https://i.pravatar.cc/300?img=3'
-  },
-  {
-    _id: 'p1',
-    name: 'Alex Rodriguez',
-    email: 'patient@example.com',
-    profileImage: 'https://i.pravatar.cc/300?img=2'
-  }
-];
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  profileImage?: string;
+  role: string;
+}
+
+interface Report {
+  _id: string;
+  patientId: string;
+  patientName?: string;
+  imageUrl: string;
+  title?: string;
+  date: string;
+  sharedWith: string[];
+  ocrResult?: {
+    findings?: string;
+  };
+}
 
 const ShareReport: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -60,38 +61,70 @@ const ShareReport: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   
-  const [report, setReport] = useState<Report | null>(location.state?.report || null);
+  const [report, setReport] = useState<Report | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState(mockUsers);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [linkCopied, setLinkCopied] = useState(false);
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSharing, setIsSharing] = useState(false);
 
+  // Load report and available users
   useEffect(() => {
-    if (!report && id) {
-      // Ici vous devriez récupérer le rapport depuis votre API
-      // fetchReport(id).then(setReport).catch(handleError);
-      toast.error('Report data not available');
-      navigate('/archive');
-    }
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load report data
+        const reportData = location.state?.report 
+          ? location.state.report 
+          : await getReportById(id!, user!.token);
+        
+        setReport(reportData);
+        setSelectedUsers(reportData.sharedWith || []);
 
-    // Initialiser les utilisateurs sélectionnés avec ceux qui ont déjà accès
-    if (report) {
-      setSelectedUsers(report.sharedWith || []);
-    }
-  }, [id, report, navigate]);
+        // Load available users (doctors only)
+        const response = await axios.get('/api/users/doctors', {
+          headers: { Authorization: `Bearer ${user!.token}` }
+        });
 
+if (Array.isArray(response.data)) {
+  setAvailableUsers(response.data);
+  setFilteredUsers(response.data);
+} else {
+  console.error('Expected an array of users, got:', response.data);
+  setAvailableUsers([]);
+  setFilteredUsers([]);
+}
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        toast.error('Failed to load report data');
+        navigate('/archive');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id && user?.token) {
+      loadData();
+    }
+  }, [id, user, navigate, location.state]);
+
+  // Filter users based on search query
   useEffect(() => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      setFilteredUsers(mockUsers.filter(u => 
-        u.name.toLowerCase().includes(query) || 
-        u.email.toLowerCase().includes(query)
-      ));
+      setFilteredUsers(
+        availableUsers.filter(u => 
+          u.name.toLowerCase().includes(query) || 
+          u.email.toLowerCase().includes(query)
+       ) );
     } else {
-      setFilteredUsers(mockUsers);
+      setFilteredUsers(availableUsers);
     }
-  }, [searchQuery]);
+  }, [searchQuery, availableUsers]);
 
   const toggleUserSelection = (userId: string) => {
     setSelectedUsers(prev => 
@@ -101,36 +134,69 @@ const ShareReport: React.FC = () => {
     );
   };
 
-  const copyShareLink = () => {
-    if (!report) return;
-    
-    const shareUrl = `${window.location.origin}/shared/${report._id}`;
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        setLinkCopied(true);
-        toast.success('Link copied to clipboard!');
-        setTimeout(() => setLinkCopied(false), 2000);
-      })
-      .catch(() => toast.error('Failed to copy link'));
-  };
+const copyShareLink = () => {
+  if (!report) return;
+  
+  const shareUrl = `${window.location.origin}/shared/${report._id}`;
+  navigator.clipboard.writeText(shareUrl)
+    .then(() => {
+      toast.success('Lien copié !');
+    })
+    .catch(() => toast.error('Échec de la copie'));
+};
 
-  const handleShareByEmail = () => {
-    if (!email) {
-      toast.error('Please enter an email address');
+  const handleShareByEmail = async () => {
+    if (!email || !validateEmail(email)) {
+      toast.error('Please enter a valid email address');
       return;
     }
-    toast.info(`Share link would be sent to ${email}`);
-    setEmail('');
+
+    if (!report || !user?.token) return;
+
+    try {
+      setIsSharing(true);
+      await shareByEmail(report._id, email, user.token);
+      toast.success(`Report shared successfully with ${email}`);
+      setEmail('');
+    } catch (error) {
+      console.error('Email share failed:', error);
+      toast.error('Failed to share report by email');
+    } finally {
+      setIsSharing(false);
+    }
   };
 
-  const handleSaveShare = () => {
-    if (!report) return;
-    
-    // Ici vous devriez mettre à jour le rapport via votre API
-    // avec les nouveaux utilisateurs sélectionnés
-    toast.success('Sharing settings saved successfully');
-    navigate(`/report/${report._id}`);
+  const handleSaveShare = async () => {
+    if (!report || !user?.token) return;
+
+    try {
+      setIsSharing(true);
+      await shareReportWithUsers(report._id, selectedUsers, user.token);
+      toast.success('Sharing settings updated successfully');
+      navigate(`/report/${report._id}`);
+    } catch (error) {
+      console.error('Share failed:', error);
+      toast.error('Failed to update sharing settings');
+    } finally {
+      setIsSharing(false);
+    }
   };
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <AppHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </main>
+      </div>
+    );
+  }
 
   if (!report) {
     return (
@@ -164,13 +230,13 @@ const ShareReport: React.FC = () => {
 
           <h1 className="text-2xl font-bold mb-6">Share Medical Report</h1>
           
-          {/* Card with report summary */}
+          {/* Report Summary Card */}
           <Card className="mb-6">
             <CardHeader className="p-4 pb-2">
               <CardTitle className="text-lg flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <FileText className="h-5 w-5 text-medical" />
-                  <span className="truncate">{report.title}</span>
+                  <span className="truncate">{report.title || "Medical Report"}</span>
                 </div>
                 <Badge variant="outline">
                   {new Date(report.date).toLocaleDateString()}
@@ -183,21 +249,27 @@ const ShareReport: React.FC = () => {
                   <User className="h-4 w-4 text-gray-500" />
                   <span>
                     <span className="text-gray-500">Patient:</span>{' '}
-                    <span className="font-medium">{report.patientId}</span>
+                    <span className="font-medium">
+                      {report.patientName || report.patientId}
+                    </span>
                   </span>
                 </div>
-                {/* <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-gray-500" />
-                  <span>
-                    <span className="text-gray-500">Created:</span>{' '}
-                    <span className="font-medium">{new Date(report.createdAt).toLocaleDateString()}</span>
-                  </span>
-                </div> */}
+                {report.imageUrl && (
+                  <div className="flex items-center gap-2">
+                    <Image className="h-4 w-4 text-gray-500" />
+                    <span>
+                      <span className="text-gray-500">Image:</span>{' '}
+                      <span className="font-medium truncate">
+                        {report.imageUrl.split('/').pop()}
+                      </span>
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Sharing options tabs */}
+          {/* Sharing Options Tabs */}
           <Tabs defaultValue="users">
             <TabsList className="w-full mb-6">
               <TabsTrigger value="users" className="flex-1">Share with Users</TabsTrigger>
@@ -207,9 +279,9 @@ const ShareReport: React.FC = () => {
             <TabsContent value="users">
               <Card>
                 <CardHeader>
-                  <CardTitle>Select Users</CardTitle>
+                  <CardTitle>Select Medical Professionals</CardTitle>
                   <CardDescription>
-                    Choose which users should have access to this report
+                    Choose doctors who should have access to this report
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -217,7 +289,7 @@ const ShareReport: React.FC = () => {
                   <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                      placeholder="Search users..."
+                      placeholder="Search doctors..."
                       className="pl-10"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -227,10 +299,10 @@ const ShareReport: React.FC = () => {
                   {/* Selected users */}
                   {selectedUsers.length > 0 && (
                     <div className="mb-4">
-                      <Label className="mb-2 block">Selected users</Label>
+                      <Label className="mb-2 block">Selected doctors</Label>
                       <div className="flex flex-wrap gap-2">
                         {selectedUsers.map(userId => {
-                          const user = mockUsers.find(u => u._id === userId);
+                          const user = availableUsers.find(u => u._id === userId);
                           if (!user) return null;
                           
                           return (
@@ -276,6 +348,7 @@ const ShareReport: React.FC = () => {
                             <div>
                               <div className="font-medium">{user.name}</div>
                               <div className="text-xs text-gray-500">{user.email}</div>
+                              <div className="text-xs text-blue-500">{user.role}</div>
                             </div>
                           </div>
                           <Button
@@ -296,7 +369,7 @@ const ShareReport: React.FC = () => {
                       <div className="text-center py-8">
                         <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-gray-500">
-                          {searchQuery ? 'No matching users found' : 'No users available'}
+                          {searchQuery ? 'No matching doctors found' : 'No doctors available'}
                         </p>
                       </div>
                     )}
@@ -308,10 +381,14 @@ const ShareReport: React.FC = () => {
                   </Button>
                   <Button 
                     onClick={handleSaveShare}
-                    disabled={selectedUsers.length === (report.sharedWith?.length || 0)}
+                    disabled={isSharing || selectedUsers.length === (report.sharedWith?.length || 0)}
                   >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Save Changes
+                    {isSharing ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Share2 className="h-4 w-4 mr-2" />
+                    )}
+                    {isSharing ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </CardFooter>
               </Card>
@@ -364,17 +441,22 @@ const ShareReport: React.FC = () => {
                     <Label className="mb-2 block">Send link via email</Label>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="email@example.com"
+                        placeholder="doctor@example.com"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
                       <Button 
                         onClick={handleShareByEmail}
+                        disabled={isSharing}
                         className="bg-medical hover:bg-medical-dark"
                       >
-                        <Mail className="h-4 w-4 mr-2" />
-                        Send
+                        {isSharing ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4 mr-2" />
+                        )}
+                        {isSharing ? 'Sending...' : 'Send'}
                       </Button>
                     </div>
                   </div>
@@ -389,3 +471,7 @@ const ShareReport: React.FC = () => {
 };
 
 export default ShareReport;
+
+function shareReportWithUsers(_id: string, selectedUsers: string[], token: string) {
+  throw new Error('Function not implemented.');
+}

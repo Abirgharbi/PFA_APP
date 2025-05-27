@@ -1,229 +1,158 @@
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  verifyTwoFactorCodeAPI,
+  generateTwoFactorCodeAPI,
+} from '@/services/authService';
+import { Preferences } from '@capacitor/preferences';
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+type Pending2FA = {
+  userId?: string;
+  email: string;
+  role: 'doctor' | 'patient';
+};
 
-// Define user types
-export type UserRole = "doctor" | "patient";
-
-export interface User {
-  id: string;
+type AuthUser = {
+  _id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: 'doctor' | 'patient';
+  token: string;
   profileImage?: string;
-  twoFactorEnabled?: boolean;
-}
+};
 
-// Mock users for demo
-const mockUsers = [
-  {
-    id: "d1",
-    email: "doctor@example.com",
-    password: "doctor123",
-    name: "Dr. Sarah Johnson",
-    role: "doctor" as UserRole,
-    profileImage: "https://i.pravatar.cc/300?img=1",
-    twoFactorEnabled: true
-  },
-  {
-    id: "d2",
-    email: "doctor2@example.com",
-    password: "doctor123",
-    name: "Dr. Michael Chen",
-    role: "doctor" as UserRole,
-    profileImage: "https://i.pravatar.cc/300?img=3",
-    twoFactorEnabled: true
-  },
-  {
-    id: "p1",
-    email: "patient@example.com",
-    password: "patient123",
-    name: "Alex Rodriguez",
-    role: "patient" as UserRole,
-    profileImage: "https://i.pravatar.cc/300?img=2",
-    twoFactorEnabled: true
-  }
-];
-
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<{success: boolean; requireTwoFactor?: boolean; tempUserId?: string}>;
-  register: (email: string, password: string, name: string, role: UserRole) => Promise<boolean>;
-  logout: () => void;
+type AuthContextType = {
+  user: AuthUser | null;
   isAuthenticated: boolean;
   isDoctor: boolean;
-  isPatient: boolean;
-  verifyTwoFactorCode: (userId: string, code: string) => Promise<boolean>;
-  generateTwoFactorCode: (userId: string) => Promise<string>;
-  pendingTwoFactorAuth: {userId: string, email: string} | null;
-  setPendingTwoFactorAuth: (data: {userId: string, email: string} | null) => void;
-}
+  loginUser: (user: AuthUser) => void;
+  logoutUser: () => void;
+  pendingTwoFactorAuth: Pending2FA | null;
+  setPendingTwoFactorAuth: (data: Pending2FA | null) => void;
+  verifyTwoFactorCode: (email: string, code: string) => Promise<boolean>;
+  generateTwoFactorCode: (email: string) => Promise<void>;
+};
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pendingTwoFactorAuth, setPendingTwoFactorAuth] = useState<{userId: string, email: string} | null>(null);
-  const [twoFactorCodes, setTwoFactorCodes] = useState<Record<string, string>>({});
-  const navigate = useNavigate();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [pendingTwoFactorAuth, setPendingTwoFactorAuth] = useState<Pending2FA | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Move this function OUTSIDE of useEffect
+  const loadUserData = async () => {
+    try {
+      const [emailRes, nameRes, tokenRes, roleRes, idRes] = await Promise.all([
+        Preferences.get({ key: 'userEmail' }),
+        Preferences.get({ key: 'userName' }),
+        Preferences.get({ key: 'userToken' }),
+        Preferences.get({ key: 'userRole' }),
+        Preferences.get({ key: 'userId' }),
+      ]);
+      const email = emailRes.value;
+      const name = nameRes.value;
+      const token = tokenRes.value;
+      const role = roleRes.value as 'doctor' | 'patient';
+      const _id = idRes.value || '';
+      if (token) {
+        const loadedUser: AuthUser = {
+          _id,
+          email,
+          name,
+          token,
+          role,
+        };
+        setUser(loadedUser);
+      }
+    } catch (error) {
+      console.error('Error loading user data from Preferences:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Check if user is stored in local storage
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem("user");
-      }
-    }
+    loadUserData();
   }, []);
 
-  const generateTwoFactorCode = async (userId: string): Promise<string> => {
-    // Generate a random 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Store the code in our state (in a real app, this would be done on the server)
-    setTwoFactorCodes(prev => ({
-      ...prev,
-      [userId]: code
-    }));
-    
-    // In a real application, this would send an email
-    console.log(`Two-factor code for user ${userId}: ${code}`);
-    
-    return code;
-  };
-
-  const verifyTwoFactorCode = async (userId: string, code: string): Promise<boolean> => {
-    // Check if the code matches
-    const storedCode = twoFactorCodes[userId];
-    
-    if (storedCode && storedCode === code) {
-      // Find the user
-      const foundUser = mockUsers.find(u => u.id === userId);
-      
-      if (foundUser) {
-        // Remove the password and complete authentication
-        const { password: passwordOmitted, ...userWithoutPassword } = foundUser;
-        setUser(userWithoutPassword);
-        setIsAuthenticated(true);
-        localStorage.setItem("user", JSON.stringify(userWithoutPassword));
-        
-        // Clear the pending 2FA
-        setPendingTwoFactorAuth(null);
-        
-        // Remove the used code
-        const { [userId]: codeOmitted, ...restCodes } = twoFactorCodes;
-        setTwoFactorCodes(restCodes);
-        
-        toast.success(`Welcome back, ${userWithoutPassword.name}!`);
-        return true;
-      }
+  const loginUser = async (userData: AuthUser) => {
+    try {
+      await Promise.all([
+        Preferences.set({ key: 'userEmail', value: userData.email }),
+        Preferences.set({ key: 'userName', value: userData.name }),
+        Preferences.set({ key: 'userToken', value: userData.token }),
+        Preferences.set({ key: 'userRole', value: userData.role }),
+        Preferences.set({ key: 'userId', value: userData._id }),
+        console.log(userData)
+      ]);
+      setUser(userData);
+    } catch (error) {
+      console.error('Error saving user data:', error);
     }
-    
-    toast.error("Invalid verification code");
-    return false;
   };
 
-  const login = async (email: string, password: string): Promise<{success: boolean; requireTwoFactor?: boolean; tempUserId?: string}> => {
-    // Mock authentication logic
-    const foundUser = mockUsers.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (foundUser) {
-      if (foundUser.twoFactorEnabled) {
-        // If 2FA is enabled, we need to verify
-        setPendingTwoFactorAuth({ userId: foundUser.id, email: foundUser.email });
-        
-        // Generate and "send" a code
-        await generateTwoFactorCode(foundUser.id);
-        
-        // In a real app, we would send an email here
-        toast.success(`Verification code sent to ${foundUser.email}`);
-        
-        return { 
-          success: true, 
-          requireTwoFactor: true,
-          tempUserId: foundUser.id
-        };
-      }
-      
-      // If no 2FA, proceed with normal login
-      const { password: passwordOmitted, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(userWithoutPassword));
-      toast.success(`Welcome back, ${userWithoutPassword.name}!`);
-      return { success: true };
+  const logoutUser = async () => {
+    try {
+      await Promise.all([
+        Preferences.remove({ key: 'userEmail' }),
+        Preferences.remove({ key: 'userName' }),
+        Preferences.remove({ key: 'userToken' }),
+        Preferences.remove({ key: 'userRole' }),
+        Preferences.remove({ key: 'userId' }),
+      ]);
+      setUser(null);
+      setPendingTwoFactorAuth(null);
+    } catch (error) {
+      console.error('Error removing user data:', error);
     }
-
-    toast.error("Invalid email or password");
-    return { success: false };
   };
 
-  const register = async (
-    email: string,
-    password: string,
-    name: string,
-    role: UserRole
-  ): Promise<boolean> => {
-    // Check if email is already in use
-    if (mockUsers.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      toast.error("Email already in use");
+  const verifyTwoFactorCode = async (email: string, code: string): Promise<boolean> => {
+    try {
+      const verified = await verifyTwoFactorCodeAPI(email, code);
+      if (verified) {
+        await loadUserData();
+        console.log("loadit") // Now accessible
+      }
+      return verified;
+    } catch (error) {
+      console.error('Error verifying 2FA code:', error);
       return false;
     }
-
-    // In a real app, you'd send this to your backend and get a response
-    const newUser = {
-      id: `${role[0]}${mockUsers.length + 1}`,
-      email,
-      name,
-      role,
-      profileImage: `https://i.pravatar.cc/300?img=${mockUsers.length + 10}`,
-      twoFactorEnabled: true
-    };
-
-    // Add to mock users (in a real app, this would be handled by the backend)
-    mockUsers.push({ ...newUser, password });
-
-    // Log the user in
-    setUser(newUser);
-    setIsAuthenticated(true);
-    localStorage.setItem("user", JSON.stringify(newUser));
-    
-    toast.success("Registration successful!");
-    return true;
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem("user");
-    toast.info("You've been logged out");
-    navigate("/");
+  const generateTwoFactorCode = async (email: string): Promise<void> => {
+    try {
+      await generateTwoFactorCodeAPI(email);
+    } catch (error) {
+      console.error('Error generating 2FA code:', error);
+    }
   };
+
+  const isAuthenticated = useMemo(() => !!user, [user]);
+  const isDoctor = useMemo(() => user?.role === 'doctor', [user]);
+
+  if (loading) {
+    return <div>Loading authentication...</div>;
+  }
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        login,
-        register,
-        logout,
         isAuthenticated,
-        isDoctor: user?.role === "doctor",
-        isPatient: user?.role === "patient",
+        isDoctor,
+        loginUser,
+        logoutUser,
+        pendingTwoFactorAuth,
+        setPendingTwoFactorAuth,
         verifyTwoFactorCode,
         generateTwoFactorCode,
-        pendingTwoFactorAuth,
-        setPendingTwoFactorAuth
       }}
     >
       {children}
@@ -231,10 +160,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === null) {
-    throw new Error("useAuth must be used within an AuthProvider");
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

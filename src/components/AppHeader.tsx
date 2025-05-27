@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, User, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,20 +11,51 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Card } from '@/components/ui/card';
-import { getNotificationsForUser } from '@/models/report';
 import { cn } from '@/lib/utils';
+import { getNotificationsForUser, markNotificationAsRead, Notification } from '@/services/notificationService';
 
 const AppHeader: React.FC = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logoutUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
-  const notifications = user ? getNotificationsForUser(user.id) : [];
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (isAuthenticated && user?.token && user?._id) {
+        setLoadingNotifications(true);
+        try {
+          const data = await getNotificationsForUser(user._id, user.token);
+          setNotifications(data);
+        } catch (error) {
+          console.error('Failed to load notifications:', error);
+        } finally {
+          setLoadingNotifications(false);
+        }
+      }
+    };
+
+    fetchNotifications();
+  }, [isAuthenticated, user]);
+
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  
-  // Get user initials for avatar fallback
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      if (user?.token) {
+        await markNotificationAsRead(notificationId, user.token);
+        setNotifications(notifications.map(n => 
+          n._id === notificationId ? { ...n, read: true } : n
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
   const getUserInitials = () => {
     if (!user?.name) return 'U';
     return user.name
@@ -82,33 +112,42 @@ const AppHeader: React.FC = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="p-2 font-semibold border-b">Notifications</div>
-                  {notifications.length > 0 ? (
-                    notifications.slice(0, 5).map((notification) => (
-                      <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-3 cursor-pointer">
-                        <div className="flex items-center w-full">
-                          <span className={cn(
-                            "w-2 h-2 rounded-full mr-2",
-                            notification.type === "warning" ? "bg-yellow-500" : 
-                            notification.type === "error" ? "bg-red-500" : 
-                            notification.type === "success" ? "bg-green-500" : "bg-blue-500"
-                          )} />
-                          <span className="font-medium">{notification.title}</span>
-                          {!notification.read && (
-                            <span className="ml-auto text-xs bg-blue-100 px-2 py-0.5 rounded-full">New</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
-                      </DropdownMenuItem>
-                    ))
+                  {loadingNotifications ? (
+                    <div className="p-3 text-center text-gray-500">Loading...</div>
+                  ) : notifications.length > 0 ? (
+                    <>
+                      {notifications.slice(0, 5).map((notification) => (
+                        <DropdownMenuItem 
+                          key={notification._id} 
+                          className="flex flex-col items-start p-3 cursor-pointer"
+                          onClick={() => handleMarkAsRead(notification._id)}
+                        >
+                          <div className="flex items-center w-full">
+                            <span className={cn(
+                              "w-2 h-2 rounded-full mr-2",
+                              notification.type === "warning" ? "bg-yellow-500" : 
+                              notification.type === "error" ? "bg-red-500" : 
+                              notification.type === "success" ? "bg-green-500" : "bg-blue-500"
+                            )} />
+                            <span className="font-medium">{notification.title}</span>
+                            {!notification.read && (
+                              <span className="ml-auto text-xs bg-blue-100 px-2 py-0.5 rounded-full">New</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </p>
+                        </DropdownMenuItem>
+                      ))}
+                      <div className="p-2 text-center border-t">
+                        <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/notifications')}>
+                          View all
+                        </Button>
+                      </div>
+                    </>
                   ) : (
                     <div className="p-3 text-center text-gray-500">No notifications</div>
-                  )}
-                  {notifications.length > 0 && (
-                    <div className="p-2 text-center border-t">
-                      <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/notifications')}>
-                        View all
-                      </Button>
-                    </div>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -137,7 +176,7 @@ const AppHeader: React.FC = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => logout()}>
+                  <DropdownMenuItem onClick={() => logoutUser()}>
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -193,7 +232,7 @@ const AppHeader: React.FC = () => {
                 variant="ghost" 
                 className="w-full justify-start text-red-500 hover:bg-red-50 hover:text-red-600"
                 onClick={() => {
-                  logout();
+                  logoutUser();
                   toggleMobileMenu();
                 }}
               >

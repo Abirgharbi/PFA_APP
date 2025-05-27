@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   FileText, 
@@ -10,7 +9,10 @@ import {
   Share2, 
   Check,
   Search,
-  X
+  X,
+  User,
+  Image,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,139 +29,176 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Report, mockReports } from '@/models/report';
-import { UserRole } from '@/contexts/AuthContext';
 import AppHeader from '@/components/AppHeader';
+import { cn } from '@/lib/utils';
+import { getReportById, shareByEmail } from '@/services/archiveService';
+import axios from 'axios';
 
-// Mock user data
-const mockUsers = [
-  {
-    id: 'd1',
-    name: 'Dr. Sarah Johnson',
-    email: 'doctor@example.com',
-    role: 'doctor' as UserRole,
-    specialization: 'Cardiologist',
-    hospital: 'Central Hospital',
-    profileImage: 'https://i.pravatar.cc/300?img=1'
-  },
-  {
-    id: 'd2',
-    name: 'Dr. Michael Chen',
-    email: 'doctor2@example.com',
-    role: 'doctor' as UserRole,
-    specialization: 'Neurologist',
-    hospital: 'Memorial Medical Center',
-    profileImage: 'https://i.pravatar.cc/300?img=3'
-  },
-  {
-    id: 'p1',
-    name: 'Alex Rodriguez',
-    email: 'patient@example.com',
-    role: 'patient' as UserRole,
-    profileImage: 'https://i.pravatar.cc/300?img=2'
-  }
-];
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  profileImage?: string;
+  role: string;
+}
+
+interface Report {
+  _id: string;
+  patientId: string;
+  patientName?: string;
+  imageUrl: string;
+  title?: string;
+  date: string;
+  sharedWith: string[];
+  ocrResult?: {
+    findings?: string;
+  };
+}
 
 const ShareReport: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const { user } = useAuth();
   
   const [report, setReport] = useState<Report | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<typeof mockUsers>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [linkCopied, setLinkCopied] = useState(false);
-  
-  // Find report and filter users who don't already have access
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSharing, setIsSharing] = useState(false);
+
+  // Load report and available users
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load report data
+        const reportData = location.state?.report 
+          ? location.state.report 
+          : await getReportById(id!, user!.token);
+        
+        setReport(reportData);
+        setSelectedUsers(reportData.sharedWith || []);
+
+        // Load available users (doctors only)
+        const response = await axios.get('/api/users/doctors', {
+          headers: { Authorization: `Bearer ${user!.token}` }
+        });
+
+if (Array.isArray(response.data)) {
+  setAvailableUsers(response.data);
+  setFilteredUsers(response.data);
+} else {
+  console.error('Expected an array of users, got:', response.data);
+  setAvailableUsers([]);
+  setFilteredUsers([]);
+}
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        toast.error('Failed to load report data');
+        navigate('/archive');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id && user?.token) {
+      loadData();
     }
-    
-    const foundReport = mockReports.find(r => r.id === id);
-    if (foundReport) {
-      setReport(foundReport);
-      
-      // Initialize selected users from those already shared with
-      setSelectedUsers([...foundReport.sharedWith]);
-    } else {
-      toast.error('Report not found');
-      navigate('/archive');
-    }
-  }, [id, isAuthenticated, navigate]);
-  
+  }, [id, user, navigate, location.state]);
+
   // Filter users based on search query
   useEffect(() => {
-    if (!report) return;
-    
-    // Filter out the current user and patient/doctor of the report
-    const availableUsers = mockUsers.filter(u => 
-      u.id !== user?.id && u.id !== report.patientId && u.id !== report.doctorId
-    );
-    
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      setFilteredUsers(availableUsers.filter(u => 
-        u.name.toLowerCase().includes(query) || 
-        u.email.toLowerCase().includes(query)
-      ));
+      setFilteredUsers(
+        availableUsers.filter(u => 
+          u.name.toLowerCase().includes(query) || 
+          u.email.toLowerCase().includes(query)
+       ) );
     } else {
       setFilteredUsers(availableUsers);
     }
-  }, [searchQuery, report, user]);
-  
+  }, [searchQuery, availableUsers]);
+
   const toggleUserSelection = (userId: string) => {
-    if (selectedUsers.includes(userId)) {
-      setSelectedUsers(selectedUsers.filter(id => id !== userId));
-    } else {
-      setSelectedUsers([...selectedUsers, userId]);
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    );
+  };
+
+const copyShareLink = () => {
+  if (!report) return;
+  
+  const shareUrl = `${window.location.origin}/shared/${report._id}`;
+  navigator.clipboard.writeText(shareUrl)
+    .then(() => {
+      toast.success('Lien copié !');
+    })
+    .catch(() => toast.error('Échec de la copie'));
+};
+
+  const handleShareByEmail = async () => {
+    if (!email || !validateEmail(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (!report || !user?.token) return;
+
+    try {
+      setIsSharing(true);
+      await shareByEmail(report._id, email, user.token);
+      toast.success(`Report shared successfully with ${email}`);
+      setEmail('');
+    } catch (error) {
+      console.error('Email share failed:', error);
+      toast.error('Failed to share report by email');
+    } finally {
+      setIsSharing(false);
     }
   };
-  
-  const handleShare = () => {
-    if (!report) return;
-    
-    // Update the report's sharedWith list
-    const updatedReport = {
-      ...report,
-      sharedWith: selectedUsers
-    };
-    
-    // Update the report in the mock data
-    const index = mockReports.findIndex(r => r.id === report.id);
-    if (index !== -1) {
-      mockReports[index] = updatedReport;
-      setReport(updatedReport);
-      
-      toast.success('Report shared successfully');
+
+  const handleSaveShare = async () => {
+    if (!report || !user?.token) return;
+
+    try {
+      setIsSharing(true);
+      await shareReportWithUsers(report._id, selectedUsers, user.token);
+      toast.success('Sharing settings updated successfully');
+      navigate(`/report/${report._id}`);
+    } catch (error) {
+      console.error('Share failed:', error);
+      toast.error('Failed to update sharing settings');
+    } finally {
+      setIsSharing(false);
     }
+
   };
-  
-  const copyShareLink = () => {
-    // In a real app, this would be a shareable link
-    const shareUrl = `https://MediOCR.example.com/shared/${report?.id}`;
-    
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        setLinkCopied(true);
-        toast.success('Share link copied to clipboard');
-        
-        // Reset the copied state after 3 seconds
-        setTimeout(() => setLinkCopied(false), 3000);
-      })
-      .catch(err => {
-        console.error('Failed to copy link:', err);
-        toast.error('Failed to copy link');
-      });
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
   };
-  
-  const handleSendEmail = () => {
-    // In a real app, this would send an email with the share link
-    toast.success('Email invitation sent');
-  };
-  
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <AppHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </main>
+      </div>
+    );
+  }
+
   if (!report) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -167,73 +206,105 @@ const ShareReport: React.FC = () => {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Loading Report...</h2>
+            <h2 className="text-2xl font-bold mb-2">Report Not Found</h2>
+            <Button onClick={() => navigate('/archive')}>Back to Archive</Button>
           </div>
         </main>
       </div>
     );
   }
-  
+
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader />
       
       <main className="flex-1 px-4 py-8">
         <div className="max-w-3xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(-1)}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Report
-            </Button>
-            <h1 className="text-2xl font-bold mb-2">Share Medical Report</h1>
-            <p className="text-gray-600">
-              Share "{report.title}" with other doctors or patients
-            </p>
-          </div>
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)}
+            className="mb-6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+
+          <h1 className="text-2xl font-bold mb-6">Share Medical Report</h1>
           
-          {/* Sharing options */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Report Access</CardTitle>
-              <CardDescription>
-                Choose how you want to share this report
-              </CardDescription>
+          {/* Report Summary Card */}
+          <Card className="mb-6">
+            <CardHeader className="p-4 pb-2">
+              <CardTitle className="text-lg flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-medical" />
+                  <span className="truncate">{report.title || "Medical Report"}</span>
+                </div>
+                <Badge variant="outline">
+                  {new Date(report.date).toLocaleDateString()}
+                </Badge>
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="users">
-                <TabsList className="mb-6">
-                  <TabsTrigger value="users">Share with Users</TabsTrigger>
-                  <TabsTrigger value="link">Share via Link</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="users">
-                  {/* Search for users */}
-                  <div className="mb-6">
-                    <Label className="mb-2 block">Search for users</Label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search by name or email..."
-                        className="pl-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
+            <CardContent className="p-4 pt-0">
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <span>
+                    <span className="text-gray-500">Patient:</span>{' '}
+                    <span className="font-medium">
+                      {report.patientName || report.patientId}
+                    </span>
+                  </span>
+                </div>
+                {report.imageUrl && (
+                  <div className="flex items-center gap-2">
+                    <Image className="h-4 w-4 text-gray-500" />
+                    <span>
+                      <span className="text-gray-500">Image:</span>{' '}
+                      <span className="font-medium truncate">
+                        {report.imageUrl.split('/').pop()}
+                      </span>
+                    </span>
                   </div>
-                  
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sharing Options Tabs */}
+          <Tabs defaultValue="users">
+            <TabsList className="w-full mb-6">
+              <TabsTrigger value="users" className="flex-1">Share with Users</TabsTrigger>
+              <TabsTrigger value="link" className="flex-1">Share via Link</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="users">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Select Medical Professionals</CardTitle>
+                  <CardDescription>
+                    Choose doctors who should have access to this report
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {/* Search input */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search doctors..."
+                      className="pl-10"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+
                   {/* Selected users */}
                   {selectedUsers.length > 0 && (
-                    <div className="mb-6">
-                      <Label className="mb-2 block">Selected users</Label>
+                    <div className="mb-4">
+                      <Label className="mb-2 block">Selected doctors</Label>
                       <div className="flex flex-wrap gap-2">
                         {selectedUsers.map(userId => {
-                          const selectedUser = mockUsers.find(u => u.id === userId);
-                          if (!selectedUser) return null;
+                          const user = availableUsers.find(u => u._id === userId);
+                          if (!user) return null;
                           
                           return (
                             <Badge 
@@ -241,11 +312,11 @@ const ShareReport: React.FC = () => {
                               variant="secondary"
                               className="flex items-center gap-1 py-1 pl-1 pr-2"
                             >
-                              <Avatar className="h-5 w-5 mr-1">
-                                <AvatarImage src={selectedUser.profileImage} alt={selectedUser.name} />
-                                <AvatarFallback>{selectedUser.name.charAt(0)}</AvatarFallback>
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={user.profileImage} />
+                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                               </Avatar>
-                              <span>{selectedUser.name}</span>
+                              <span>{user.name}</span>
                               <X 
                                 className="h-3.5 w-3.5 ml-1 cursor-pointer" 
                                 onClick={() => toggleUserSelection(userId)}
@@ -256,236 +327,145 @@ const ShareReport: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
-                  {/* User list */}
-                  <div className="max-h-80 overflow-y-auto">
+
+                  {/* Users list */}
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
                     {filteredUsers.length > 0 ? (
-                      <div className="space-y-2">
-                        {filteredUsers.map(user => (
-                          <div 
-                            key={user.id}
-                            className="flex items-center justify-between p-3 rounded-md border border-gray-100 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex items-center">
-                              <Avatar className="h-10 w-10 mr-3">
-                                <AvatarImage src={user.profileImage} alt={user.name} />
-                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">{user.name}</div>
-                                <div className="text-xs text-gray-500 flex items-center gap-1">
-                                  <span>{user.email}</span>
-                                  <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                  <span className="capitalize">{user.role}</span>
-                                </div>
-                              </div>
+                      filteredUsers.map(user => (
+                        <div
+                          key={user._id}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-md border",
+                            selectedUsers.includes(user._id) 
+                              ? "border-medical bg-medical/10" 
+                              : "border-gray-100 hover:bg-gray-50"
+                          )}
+                        >
+                          <div className="flex items-center">
+                            <Avatar className="h-9 w-9 mr-3">
+                              <AvatarImage src={user.profileImage} />
+                              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{user.name}</div>
+                              <div className="text-xs text-gray-500">{user.email}</div>
+                              <div className="text-xs text-blue-500">{user.role}</div>
                             </div>
-                            <Button 
-                              variant={selectedUsers.includes(user.id) ? "default" : "outline"}
-                              size="sm"
-                              className={selectedUsers.includes(user.id) ? "bg-medical hover:bg-medical-dark" : ""}
-                              onClick={() => toggleUserSelection(user.id)}
-                            >
-                              {selectedUsers.includes(user.id) ? (
-                                <>
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Selected
-                                </>
-                              ) : "Select"}
-                            </Button>
                           </div>
-                        ))}
-                      </div>
+                          <Button
+                            variant={selectedUsers.includes(user._id) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleUserSelection(user._id)}
+                          >
+                            {selectedUsers.includes(user._id) ? (
+                              <>
+                                <Check className="h-4 w-4 mr-1" />
+                                Selected
+                              </>
+                            ) : 'Select'}
+                          </Button>
+                        </div>
+                      ))
                     ) : (
-                      <div className="text-center py-8 bg-gray-50 rounded-md">
-                        <Search className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-                        {searchQuery ? (
-                          <p className="text-gray-500">No users match your search</p>
-                        ) : (
-                          <p className="text-gray-500">No users available to share with</p>
-                        )}
+                      <div className="text-center py-8">
+                        <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500">
+                          {searchQuery ? 'No matching doctors found' : 'No doctors available'}
+                        </p>
                       </div>
                     )}
                   </div>
-                </TabsContent>
-                
-                <TabsContent value="link">
-                  <div className="space-y-6">
-                    <div>
-                      <Label className="mb-2 block">Share via link</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          readOnly
-                          value={`https://MediOCR.example.com/shared/${report.id}`}
-                          className="flex-grow bg-gray-50"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          onClick={copyShareLink}
-                        >
-                          {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Anyone with the link can view this report.
-                      </p>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline" onClick={() => navigate(-1)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSaveShare}
+                    disabled={isSharing || selectedUsers.length === (report.sharedWith?.length || 0)}
+                  >
+                    {isSharing ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Share2 className="h-4 w-4 mr-2" />
+                    )}
+                    {isSharing ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="link">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Share via Link</CardTitle>
+                  <CardDescription>
+                    Create a shareable link for this report
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="mb-2 block">Shareable link</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        readOnly
+                        value={`${window.location.origin}/shared/${report._id}`}
+                        className="bg-gray-50"
+                      />
+                      <Button 
+                        variant="outline" 
+                        onClick={copyShareLink}
+                        className={cn(
+                          "gap-2",
+                          linkCopied ? "bg-green-500 hover:bg-green-500 text-white" : ""
+                        )}
+                      >
+                        {linkCopied ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+
                     </div>
-                    
-                    <div className="border-t pt-6">
-                      <Label className="mb-2 block">Send invite via email</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          placeholder="Enter email address"
-                          type="email"
-                          className="flex-grow"
-                        />
-                        <Button 
-                          onClick={handleSendEmail}
-                          className="bg-medical hover:bg-medical-dark whitespace-nowrap"
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Send Invite
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        The recipient will receive an email with a link to this report.
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Anyone with this link can view the report.
+                    </p>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button 
-                variant="outline"
-                onClick={() => navigate(`/report/${report.id}`)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                className="bg-medical hover:bg-medical-dark"
-                onClick={handleShare}
-                disabled={selectedUsers.length === report.sharedWith.length && 
-                  selectedUsers.every(id => report.sharedWith.includes(id))}
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Save Sharing Settings
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          {/* Current access section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Current Access</CardTitle>
-              <CardDescription>
-                People who already have access to this report
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Report owner */}
-                <div className="p-4 bg-gray-50 rounded-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Avatar className="h-10 w-10 mr-3">
-                        <AvatarImage 
-                          src={user?.id === report.doctorId ? user.profileImage : "https://i.pravatar.cc/300?img=1"} 
-                          alt="Doctor"
-                        />
-                        <AvatarFallback>D</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">
-                          {report.doctorName}
-                          {user?.id === report.doctorId && " (You)"}
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <span>Owner</span>
-                          <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                          <span>Doctor</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge>Owner</Badge>
-                  </div>
-                </div>
-                
-                {/* Patient */}
-                <div className="p-4 bg-gray-50 rounded-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Avatar className="h-10 w-10 mr-3">
-                        <AvatarImage 
-                          src={user?.id === report.patientId ? user.profileImage : "https://i.pravatar.cc/300?img=2"} 
-                          alt="Patient"
-                        />
-                        <AvatarFallback>P</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">
-                          {report.patientName}
-                          {user?.id === report.patientId && " (You)"}
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <span>Has access</span>
-                          <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                          <span>Patient</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="outline">Patient</Badge>
-                  </div>
-                </div>
-                
-                {/* Shared with others */}
-                {report.sharedWith.length > 0 && report.sharedWith.map(userId => {
-                  const sharedUser = mockUsers.find(u => u.id === userId);
-                  if (!sharedUser) return null;
                   
-                  return (
-                    <div key={userId} className="p-4 bg-gray-50 rounded-md">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Avatar className="h-10 w-10 mr-3">
-                            <AvatarImage src={sharedUser.profileImage} alt={sharedUser.name} />
-                            <AvatarFallback>{sharedUser.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">
-                              {sharedUser.name}
-                              {user?.id === sharedUser.id && " (You)"}
-                            </div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                              <span>Has access</span>
-                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                              <span className="capitalize">{sharedUser.role}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="capitalize">
-                            {sharedUser.role}
-                          </Badge>
-                          {!selectedUsers.includes(userId) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => toggleUserSelection(userId)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                  <div className="border-t pt-4">
+                    <Label className="mb-2 block">Send link via email</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="doctor@example.com"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <Button 
+                        onClick={handleShareByEmail}
+                        disabled={isSharing}
+                        className="bg-medical hover:bg-medical-dark"
+                      >
+                        {isSharing ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4 mr-2" />
+                        )}
+                        {isSharing ? 'Sending...' : 'Send'}
+                      </Button>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
@@ -493,3 +473,7 @@ const ShareReport: React.FC = () => {
 };
 
 export default ShareReport;
+
+function shareReportWithUsers(_id: string, selectedUsers: string[], token: string) {
+  throw new Error('Function not implemented.');
+}

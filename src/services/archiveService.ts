@@ -13,6 +13,7 @@ export const getReportsForUser = async (token: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
+    console.log('Réponse de la récupération des rapports:', response.data);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des rapports', error);
@@ -67,6 +68,7 @@ export const getSharedReport = async (reportId: string, email?: string) => {
     params,
     withCredentials: true
   });
+  console.log('Shared report response:', response.data);
   return response.data.data;
 };
 

@@ -25,7 +25,7 @@ useEffect(() => {
     try {
       setIsLoading(true);
       const email = searchParams.get('email');
-      
+      console.log('Chargement du rapport avec ID:', id, 'et email:', email);
       const reportData = await getSharedReport(id!, email || undefined);
       
       if (!reportData) {
@@ -46,6 +46,7 @@ useEffect(() => {
     loadReport();
   }
 }, [id, navigate, searchParams]);
+console.log(report)
 
   const handleAccept = async () => {
     try {
@@ -93,7 +94,7 @@ useEffect(() => {
   report,
   searchParams: Object.fromEntries(searchParams.entries())
 });
-
+console.log('Report data:', report.imageUrl);
   return (
 
     
@@ -137,53 +138,57 @@ useEffect(() => {
 
 
 
-        <TabsContent value="results">
-          <Card>
-            <CardContent className="p-6">
-              {report.ocrResult?.parameters?.length ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valeur</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unité</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Référence</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {report.ocrResult.parameters.map((param, index) => (
-                        <tr key={index}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{param.champ}</td>
-                          <td className={cn("px-6 py-4 whitespace-nowrap text-sm font-medium", getTestResultColor(param.état))}>
-                            {param.valeur}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{param.unité || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{param.référence || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={cn(
-                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                              param.état === 'Normal' ? 'bg-green-100 text-green-800' :
-                              param.état === 'Anormal' ? 'bg-yellow-100 text-yellow-800' :
-                              param.état === 'Intervalle inconnu' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            )}>
-                              {param.état || 'Non spécifié'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-500">Aucun résultat de test disponible</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+<TabsContent value="results">
+  <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+    <h2 className="text-xl font-semibold mb-4">Test Results</h2>
+    <div className="overflow-x-auto">
+      <table className="min-w-full">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Test</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Value</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">unité</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Normal Range</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(report.ocrResult.tables).map(([tableName, parameters]) => (
+            <React.Fragment key={tableName}>
+              <tr>
+                <td colSpan={5} className="py-4 px-4 font-bold bg-gray-100 text-gray-800 text-left">
+                  {tableName}
+                </td>
+              </tr>
+              {parameters.map((param, index) => (
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4">{param.champ}</td>
+                  <td className={cn("py-3 px-4 font-medium", getTestResultColor(param.etat))}>
+                    {param.valeur || '-'}
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{param.unité || '-'}</td>
+                  <td className="py-3 px-4 text-gray-600">{param.Valeurs_usuelles || '-'}</td>
+                  <td className="py-3 px-4">
+                    <span className={cn(
+                      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                      param.etat === 'bonne' ? 'bg-green-100 text-green-800' :
+                      param.etat === 'anormale' ? 'bg-yellow-100 text-yellow-800' :
+                      param.etat === 'inconnu' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    )}>
+                      {param.etat || 'Non spécifié'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</TabsContent>
+  </Tabs>
 
       {report.imageUrl && (
         <Card className="mt-6">

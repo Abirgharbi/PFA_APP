@@ -39,6 +39,9 @@ const ReportDetails: React.FC = () => {
       }
     }
   }, [id, isAuthenticated, navigate, report]);
+const totalParametersCount = Object.values(report.ocrResult.tables)
+  .flat()
+  .length;
 
   const handleShareReport = () => {
     if (!report) return;
@@ -58,15 +61,23 @@ const ReportDetails: React.FC = () => {
   const handleDownloadReport = () => {
     toast.info('Download functionality is not available in this demo');
   };
+const getOverallStatus = (): string => {
+  if (!report?.ocrResult?.tables) return 'Inconnu';
 
-  const getOverallStatus = (): string => {
-    if (!report || !report.ocrResult.parameters.length) return 'Inconnu';
-    const hasAbnormal = report.ocrResult.parameters.some(p => p.état === 'Anormal');
-    const hasUnknown = report.ocrResult.parameters.some(p => p.état === 'Intervalle inconnu');
-    if (hasAbnormal) return 'Anormal';
-    if (hasUnknown) return 'Intervalle inconnu';
-    return 'Normal';
-  };
+  const allEntries = Object.values(report.ocrResult.tables).flat();
+
+  if (allEntries.length === 0) return 'Inconnu';
+
+  const hasAbnormal = allEntries.some(entry => entry.etat === 'anormale');
+  const hasUnknown = allEntries.some(entry =>
+    entry.etat === 'inconnu' || entry.etat === 'inconnu'
+  );
+
+  if (hasAbnormal) return 'anormale';
+  if (hasUnknown) return 'inconnu';
+  return 'Normal';
+};
+
 
   if (!report) {
     return (
@@ -82,7 +93,7 @@ const ReportDetails: React.FC = () => {
       </div>
     );
   }
-  
+  console.log(report.ocrResult.tables)
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader />
@@ -155,50 +166,57 @@ const ReportDetails: React.FC = () => {
               <TabsTrigger value="image" onClick={() => setShowImage(true)}>Original Image</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="results">
-              <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-                <h2 className="text-xl font-semibold mb-4">Test Results</h2>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Test</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Value</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Unit</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Normal Range</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.ocrResult.parameters.map((param, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4">{param.champ}</td>
-                          <td className={cn("py-3 px-4 font-medium", getTestResultColor(param.état))}>
-                            {param.valeur}
-                          </td>
-                          <td className="py-3 px-4 text-gray-600">{param.unité || '-'}</td>
-                          <td className="py-3 px-4 text-gray-600">{param.référence || '-'}</td>
-                          <td className="py-3 px-4">
-                            <span className={cn(
-                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                              param.état === 'Normal' ? 'bg-green-100 text-green-800' :
-                              param.état === 'Anormal' ? 'bg-yellow-100 text-yellow-800' :
-                              param.état === 'Intervalle inconnu' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            )}>
-                              {param.état || 'Not specified'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </TabsContent>
-            
+<TabsContent value="results">
+  <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+    <h2 className="text-xl font-semibold mb-4">Test Results</h2>
+    <div className="overflow-x-auto">
+      <table className="min-w-full">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Test</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Value</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">unité</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Normal Range</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(report.ocrResult.tables).map(([tableName, parameters]) => (
+            <React.Fragment key={tableName}>
+              <tr>
+                <td colSpan={5} className="py-4 px-4 font-bold bg-gray-100 text-gray-800 text-left">
+                  {tableName}
+                </td>
+              </tr>
+              {parameters.map((param, index) => (
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4">{param.champ}</td>
+                  <td className={cn("py-3 px-4 font-medium", getTestResultColor(param.etat))}>
+                    {param.valeur || '-'}
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{param.unité || '-'}</td>
+                  <td className="py-3 px-4 text-gray-600">{param.Valeurs_usuelles || '-'}</td>
+                  <td className="py-3 px-4">
+                    <span className={cn(
+                      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                      param.etat === 'bonne' ? 'bg-green-100 text-green-800' :
+                      param.etat === 'anormale' ? 'bg-yellow-100 text-yellow-800' :
+                      param.etat === 'inconnu' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    )}>
+                      {param.etat || 'Non spécifié'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</TabsContent>
+      
             <TabsContent value="image">
               <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
                 <h2 className="text-xl font-semibold mb-4">Original Report Image</h2>
@@ -261,7 +279,7 @@ const ReportDetails: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Parameters Extracted</p>
-                        <p className="font-medium">{report.ocrResult.parameters.length}</p>
+                        <p className="font-medium">{totalParametersCount}</p>
                       </div>
                     </div>
                   </div>

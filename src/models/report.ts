@@ -1,24 +1,30 @@
+export interface OCRResultItem {
+  champ: string;
+  valeur?: string;
+  unité?: string;
+  etat?: string;
+  Valeurs_usuelles?: string;
+}
+
+
+export interface OCRResult {
+  Edite_date: string;
+  processing_time: number;
+  tables: Record<string, OCRResultItem[]>;
+}
+
 export interface Report {
   _id: string;
   title?: string;
   patientId: string;
-  doctorId? : string | "doctor";
-  doctorName? : string;
-  patientName?: string
+  doctorId?: string | "doctor";
+  doctorName?: string;
+  patientName?: string;
   imageUrl: string;
-  reportType? : ReportType;
-  sharedWith? : string[];
-  status? : string;
-  ocrResult: {
-    parameters: {
-      champ: string;
-      référence: string;
-      unité: string;
-      valeur: string;
-      état: string;
-    }[];
-    processing_time: number;
-  };
+  reportType?: ReportType;
+  sharedWith?: string[];
+  status?: string;
+  ocrResult: OCRResult;
   date: string;
   __v?: number;
   followUpDate?: string;
@@ -26,6 +32,8 @@ export interface Report {
   createdAt: string;
   updatedAt: string;
 }
+
+
 
 export type ReportType = 'blood_test' | 'imaging' | 'physical_exam' | 'pathology' | 'other';
 

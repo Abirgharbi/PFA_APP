@@ -14,6 +14,7 @@ interface User {
   fullName: string;
   email: string;
   password: string;
+  role?: 'patient' | 'doctor'; // Optional role for registration
 }
 
 // Interface Login
@@ -107,10 +108,9 @@ export async function verifyTwoFactorCodeAPI(email: string, code: string) {
       code,
     });
 
-    const { token, user } = response.data;
+    const { token, user, role } = response.data;
 
     if (token && user) {
-      console.log("we put it succefuly")
       await Preferences.set({
         key: 'userToken',
         value: token,
@@ -123,8 +123,11 @@ export async function verifyTwoFactorCodeAPI(email: string, code: string) {
         key: 'userEmail',
         value: user.email,
       });
+            await Preferences.set({
+        key: 'userRole',
+        value: role,
+      });
     }
-
     return true; // Return success status
   } catch (error) {
     console.error('Error verifying 2FA code:', error);

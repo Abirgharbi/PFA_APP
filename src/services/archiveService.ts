@@ -75,8 +75,12 @@ export const getSharedReport = async (reportId: string, email?: string) => {
 export const acceptSharedReport = async (reportId: string, token: string) => {
   const response = await axios.post(
     `${API_URL}/shared/${reportId}/accept`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
+    {}, // body can be empty if not needed
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
   return response.data;
 };

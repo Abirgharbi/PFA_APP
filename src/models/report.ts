@@ -26,9 +26,11 @@ export interface Report {
   status?: string;
   ocrResult: OCRResult;
   date: string;
+  isPublic:Boolean;
   __v?: number;
   followUpDate?: string;
   notes?: string;
+  
   createdAt: string;
   updatedAt: string;
 }

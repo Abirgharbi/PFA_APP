@@ -21,7 +21,7 @@ interface OCRTestResult {
   valeur?: string;
   unité?: string;
   Valeurs_usuelles?: string;
-  état?: 'Normal' | 'Anormal' | 'inconnu';
+  etat?: 'Normal' | 'Anormal' | 'inconnu';
 
   // Accept any number of anteriorite fields dynamically
   [key: `anteriorite ${number}`]: string | undefined;
@@ -53,7 +53,7 @@ interface FormattedOCRData {
       value: string;
       unit: string;
       normalRange: string;
-      status: 'normal' | 'abnormal';
+      etat: 'Normal' | 'Abnormal' | 'inconnu';
     }[];
   };
   diagnosis: string;
@@ -122,7 +122,7 @@ for (const [category, results] of Object.entries(data.tables)) {
     value: test.valeur,
     unit: test.unité || '',
     normalRange: test.Valeurs_usuelles || '',
-    status: (test.état === 'Anormal' ? 'abnormal' : 'normal'),
+    status: (test.etat === 'inconnu' ? 'Anormal' : 'Normal'),
   }));
 }
 
@@ -398,8 +398,8 @@ for (const [category, results] of Object.entries(data.tables)) {
                 <td className="p-2">{result.unit}</td>
                 <td className="p-2">{result.normalRange}</td>
                 <td className="p-2">
-                  <span className={result.status === 'abnormal' ? 'text-red-600 font-medium' : 'text-green-600'}>
-                    {result.status === 'abnormal' ? 'Anormal' : 'Normal'}
+                  <span className={result.etat === 'Anormal' ? 'text-red-600 font-medium' : 'text-green-600'}>
+                    {result.etat === 'inconnu' ? 'Anormal' : 'Normal'}
                   </span>
                 </td>
               </tr>

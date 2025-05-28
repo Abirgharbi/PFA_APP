@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Report, getReportStatusColor, getTestResultColor } from '@/models/report';
 import { useAuth } from '@/contexts/AuthContext';
+import axios from 'axios';
 
 
 const SharedReportView: React.FC = () => {
@@ -46,16 +47,22 @@ useEffect(() => {
     loadReport();
   }
 }, [id, navigate, searchParams]);
-console.log(report)
 
-  const handleAccept = async () => {
-    try {
-      await acceptSharedReport(id, user.token);
-      navigate('/mes-rapports'); // Rediriger vers la liste des rapports
-    } catch (error) {
-      console.error('Failed to accept report:', error);
+const handleAccept = async () => {
+  try {
+    if (user.role !== 'doctor') {
+      toast.error("Only doctors can accept shared reports.");
+      return;
     }
-  };
+
+    await acceptSharedReport(id, user.token);
+    navigate('/dashboard'); // Redirect to dashboard after accepting
+  } catch (error) {
+    console.error('Failed to accept report:', error);
+    alert("An error occurred while accepting the report.");
+  }
+};
+
 
   const getTestResultColor = (status?: string) => {
     switch (status) {
@@ -111,21 +118,28 @@ console.log('Report data:', report.imageUrl);
 
       <Card className="mb-6">
         <CardHeader>
+          
           <CardTitle className="flex items-center gap-2">
             <FileText /> {report.title || 'Rapport Médical'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="font-medium">Patient</p>
-              <p>{report.patientId || 'Non spécifié'}</p>
-            </div>
-            <div>
-              <p className="font-medium">Date</p>
-              <p>{new Date(report.date).toLocaleDateString()}</p>
-            </div>
-          </div>
+<div className="grid md:grid-cols-2 gap-4">
+  <div>
+    <p className="font-medium">Patient</p>
+    <p>{report.patientName || 'Non spécifié'}</p>
+  </div>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="font-medium">Date</p>
+      <p>{new Date(report.date).toLocaleDateString()}</p>
+    </div>
+    <Button onClick={handleAccept} className="ml-4">
+      Accepter le rapport
+    </Button>
+  </div>
+</div>
+
         </CardContent>
       </Card>
 

@@ -33,6 +33,7 @@ import AppHeader from '@/components/AppHeader';
 import { cn } from '@/lib/utils';
 import { getReportById, shareByEmail } from '@/services/archiveService';
 import axios from 'axios';
+import { Report} from '@/models/report';
 
 interface User {
   _id: string;
@@ -40,19 +41,6 @@ interface User {
   email: string;
   profileImage?: string;
   role: string;
-}
-
-interface Report {
-  _id: string;
-  patientId: string;
-  patientName?: string;
-  imageUrl: string;
-  title?: string;
-  date: string;
-  sharedWith: string[];
-  ocrResult?: {
-    findings?: string;
-  };
 }
 
 const ShareReport: React.FC = () => {
@@ -83,6 +71,7 @@ const ShareReport: React.FC = () => {
           : await getReportById(id!, user!.token);
         
         setReport(reportData);
+
         setSelectedUsers(reportData.sharedWith || []);
 
         // Load available users (doctors only)
@@ -133,7 +122,25 @@ if (Array.isArray(response.data)) {
         : [...prev, userId]
     );
   };
-
+  const toggleVisibility = async () => {
+    try {
+      const response = await axios.patch(
+        `http://localhost:3000/api/uploads/${report._id}/visibility`,
+        { isPublic: !report.isPublic },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+      setReport(prev => ({ ...prev!, isPublic: response.data.isPublic }));
+      toast.success(`Le rapport est maintenant ${response.data.isPublic ? 'public' : 'privé'}.`);
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la visibilité :', error);
+      toast.error("Échec de la mise à jour de la visibilité du rapport.");
+    }
+  };
 const copyShareLink = () => {
   if (!report) return;
   
@@ -268,8 +275,24 @@ const copyShareLink = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Sharing Options Tabs */}
+<Card className="mb-6">
+  <CardHeader>
+    <CardTitle>Confidentialité du rapport</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="flex items-center justify-between">
+      <p className="text-sm text-gray-600">
+        Statut :
+        <span className={`ml-2 font-semibold ${report.isPublic ? 'text-green-600' : 'text-red-600'}`}>
+          {report.isPublic ? 'Public' : 'Privé'}
+        </span>
+      </p>
+      <Button variant="outline" onClick={toggleVisibility}>
+        Rendre {report.isPublic ? 'privé' : 'public'}
+      </Button>
+    </div>
+  </CardContent>
+</Card>  {/* Sharing Options Tabs */}
           <Tabs defaultValue="users">
             <TabsList className="w-full mb-6">
               <TabsTrigger value="users" className="flex-1">Share with Users</TabsTrigger>
@@ -411,26 +434,30 @@ const copyShareLink = () => {
                         value={`${window.location.origin}/shared/${report._id}`}
                         className="bg-gray-50"
                       />
-                      <Button 
-                        variant="outline" 
-                        onClick={copyShareLink}
-                        className={cn(
-                          "gap-2",
-                          linkCopied ? "bg-green-500 hover:bg-green-500 text-white" : ""
-                        )}
-                      >
-                        {linkCopied ? (
-                          <>
-                            <Check className="h-4 w-4" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4" />
-                            Copy
-                          </>
-                        )}
-                      </Button>
+<Button 
+  variant="outline" 
+  onClick={copyShareLink}
+  disabled={!report.isPublic}
+  className={cn(
+    "gap-2",
+    !report.isPublic && "cursor-not-allowed opacity-50", // Optional visual feedback
+    linkCopied ? "bg-green-500 hover:bg-green-500 text-white" : ""
+  )}
+>
+  {linkCopied ? (
+    <>
+      <Check className="h-4 w-4" />
+      Copied!
+    </>
+  ) : (
+    <>
+      <Copy className="h-4 w-4" />
+      Copy
+    </>
+  )}
+</Button>
+
+
                     </div>
                     <p className="text-xs text-gray-500 mt-2">
                       Anyone with this link can view the report.
@@ -446,18 +473,19 @@ const copyShareLink = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />
-                      <Button 
-                        onClick={handleShareByEmail}
-                        disabled={isSharing}
-                        className="bg-medical hover:bg-medical-dark"
-                      >
-                        {isSharing ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Mail className="h-4 w-4 mr-2" />
-                        )}
-                        {isSharing ? 'Sending...' : 'Send'}
-                      </Button>
+<Button 
+  onClick={handleShareByEmail}
+  disabled={isSharing || !report.isPublic}
+  className="bg-medical hover:bg-medical-dark"
+>
+  {isSharing ? (
+    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+  ) : (
+    <Mail className="h-4 w-4 mr-2" />
+  )}
+  {isSharing ? 'Sending...' : 'Send'}
+</Button>
+
                     </div>
                   </div>
                 </CardContent>

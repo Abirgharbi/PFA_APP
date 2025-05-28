@@ -19,6 +19,22 @@ export const getPatientById = async (patientId: string, token: string) => {
   }
 };
 
+ export const getMyPatient = async (token: string) => {
+   try {
+    const response = await axios.get(`${API_URL}/doctors/my-patients`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log('Réponse de la récupération des patients:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des patients', error);
+    throw error;
+  }
+
+ };
+
 export const getReportsByPatientId = async (patientId: string, token: string) => {
   try {
     const response = await axios.get(`${API_URL}/reports/patient/${patientId}`, {

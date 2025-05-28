@@ -392,7 +392,7 @@ const copyShareLink = () => {
                       <div className="text-center py-8">
                         <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-gray-500">
-                          {searchQuery ? 'No matching doctors found' : 'No doctors available'}
+                          {searchQuery ? 'No matching Patient found' : 'No Patient available'}
                         </p>
                       </div>
                     )}

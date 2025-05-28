@@ -21,6 +21,7 @@ export const getReportsForUser = async (token: string) => {
   }
 };
 
+
 export const getReportById = async (reportId: string, token: string) => {
   try {
     const response = await axios.get(`${API_URL}/uploads/${reportId}`, {

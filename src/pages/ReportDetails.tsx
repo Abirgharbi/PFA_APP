@@ -68,12 +68,12 @@ const getOverallStatus = (): string => {
 
   if (allEntries.length === 0) return 'Inconnu';
 
-  const hasAbnormal = allEntries.some(entry => entry.etat === 'anormale');
+  const hasAbnormal = allEntries.some(entry => entry.etat === 'Anormal');
   const hasUnknown = allEntries.some(entry =>
     entry.etat === 'inconnu' || entry.etat === 'inconnu'
   );
 
-  if (hasAbnormal) return 'anormale';
+  if (hasAbnormal) return 'Anormal';
   if (hasUnknown) return 'inconnu';
   return 'Normal';
 };

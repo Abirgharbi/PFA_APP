@@ -24,14 +24,14 @@ const getToken = async (): Promise<string | null> => {
   return token.value;
 };
 
-export const fetchReportAnalytics = async (): Promise<ReportAnalytics> => {
+export const fetchReportAnalytics = async (patientId: string): Promise<ReportAnalytics> => {
   const token = await getToken();
 
   if (!token) {
     throw new Error('Token non trouvé, utilisateur non authentifié');
   }
 
-  const response = await axios.get<ReportAnalytics>(`${API_URL}/uploads/analytics`, {
+  const response = await axios.get<ReportAnalytics>(`${API_URL}/uploads/analytics/${patientId}`, {
     headers: {
       Authorization: `Bearer ${token}`
     }

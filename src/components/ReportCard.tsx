@@ -42,6 +42,22 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, view = 'grid', onShare,
     e.stopPropagation();
     if (onShare) onShare(report);
   };
+  const getOverallStatus = (): string => {
+  if (!report?.ocrResult?.tables) return 'Inconnu';
+
+  const allEntries = Object.values(report.ocrResult.tables).flat();
+
+  if (allEntries.length === 0) return 'Inconnu';
+
+  const hasAbnormal = allEntries.some(entry => entry.etat === 'anormale');
+  const hasUnknown = allEntries.some(entry =>
+    entry.etat === 'inconnu' || entry.etat === 'inconnu'
+  );
+
+  if (hasAbnormal) return 'anormale';
+  if (hasUnknown) return 'inconnu';
+  return 'Normal';
+};
 
   const getStatusIcon = () => {
     const status = getOverallStatus();
@@ -57,14 +73,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, view = 'grid', onShare,
     }
   };
 
-  const getOverallStatus = (): string => {
-    if (!report.ocrResult?.parameters?.length) return 'Unknown';
-    const hasAbnormal = report.ocrResult.parameters.some(p => p.état === 'Abnormal');
-    const hasUnknown = report.ocrResult.parameters.some(p => p.état === 'Unknown range');
-    if (hasAbnormal) return 'Abnormal';
-    if (hasUnknown) return 'Unknown';
-    return 'Normal';
-  };
+
 
   if (view === 'list') {
     return (
@@ -79,9 +88,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, view = 'grid', onShare,
             </div>
             <div>
               <h3 className="font-medium">{report.title || 'Medical Report'}</h3>
-              <p className="text-sm text-gray-500">
-                {new Date(report.date).toLocaleDateString()} • {report.ocrResult?.parameters?.length || 0} parameters
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -140,10 +146,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, view = 'grid', onShare,
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">Type:</span>
             <span className="font-medium">{getReportTypeLabel(report.reportType)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Parameters:</span>
-            <span className="font-medium">{report.ocrResult?.parameters?.length || 0}</span>
           </div>
         </div>
       </CardContent>

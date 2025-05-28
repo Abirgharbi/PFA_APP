@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { fetchReportAnalytics, ReportAnalytics } from '../services/reportService';
 import { Bar, Line, Pie } from 'react-chartjs-2';
+import type { ChartOptions } from 'chart.js';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,7 +31,14 @@ ChartJS.register(
   ArcElement // for Pie chart
 );
 
-const ReportsAnalytics: React.FC = () => {
+
+interface ReportsAnalyticsProps {
+  patientId: string;
+}
+
+
+const ReportsAnalytics:  React.FC<ReportsAnalyticsProps> = ({ patientId }) => {
+
   const [data, setData] = useState<ReportAnalytics | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +47,7 @@ const ReportsAnalytics: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const analytics = await fetchReportAnalytics();
+         const analytics = await fetchReportAnalytics(patientId); // Modifiez votre service
         setData(analytics);
 
         // Sélectionner automatiquement le premier champ
@@ -53,7 +62,7 @@ const ReportsAnalytics: React.FC = () => {
     };
 
     loadData();
-  }, []);
+  }, [patientId]);
 
   if (loading) return <p>Chargement...</p>;
   if (error) return <p>Erreur : {error}</p>;
@@ -78,20 +87,28 @@ const ReportsAnalytics: React.FC = () => {
     }]
   };
 
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: {
-        type: 'time',
-        time: { unit: 'month' },
-        title: { display: true, text: 'Date' }
+const lineOptions: ChartOptions<'line'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      type: 'time',
+      time: {
+        unit: 'month',
       },
-      y: {
-        title: { display: true, text: filtered[0]?.unité || 'Valeur' }
-      }
-    }
-  };
+      title: {
+        display: true,
+        text: 'Date',
+      },
+    },
+    y: {
+      title: {
+        display: true,
+        text: filtered[0]?.unité || 'Valeur',
+      },
+    },
+  },
+};
 
   const barData = {
     labels: ['Rapports'],

@@ -14,7 +14,6 @@ import ScanReport from "./pages/ScanReport";
 import ReportDetails from "./pages/ReportDetails";
 import ReportArchive from "./pages/ReportArchive";
 import ShareReport from "./pages/ShareReport";
-import PatientReports from "./pages/PatientReports";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 import VerifyCode from "./pages/VerifyCode";
@@ -23,6 +22,7 @@ import ReportsAnalytics from "./pages/ReportsAnalytics";
 import SharedReportView from "./pages/SharedReportView";
 import SharedReportPage from "./pages/SharedReportPage";
 import PatientPage from "./pages/PatientPage";
+import MyPatients from "./pages/MyPatients";
 
 const queryClient = new QueryClient();
 
@@ -61,12 +61,10 @@ const App = () => {
               <Route path="/report/:id" element={<ReportDetails />} />
               <Route path="/archive" element={<ReportArchive />} />
               <Route path="/share/:id" element={<ShareReport />} />
-              <Route path="/graph" element={<ReportsAnalytics />} />
-              <Route path="/patients/:id/reports" element={<PatientReports />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
               <Route path="/shared/:id" element={<SharedReportView />} />
-              <Route path="/listPatients" element={<PatientPage/>} />
+              <Route path="/listPatients" element={<MyPatients/>} />
               
             </Routes>
           </AuthProvider>

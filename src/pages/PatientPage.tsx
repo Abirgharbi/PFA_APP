@@ -31,7 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import AppHeader from '@/components/AppHeader';
 import { cn } from '@/lib/utils';
-import { getReportById, shareByEmail } from '@/services/archiveService';
+
 import axios from 'axios';
 
 interface User {
@@ -39,8 +39,11 @@ interface User {
   fullName: string;
   email: string;
 }
+interface PatientSelectionProps {
+  onSelectPatient: (id: string) => void;
+}
 
-const PatientPage : React.FC = () => {
+const PatientPage : React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
 
       const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -106,6 +109,7 @@ const PatientPage : React.FC = () => {
   }, [searchQuery, availableUsers]);
 
   const toggleUserSelection = (userId: string) => {
+    onSelectPatient(userId); // Appel à la fonction parente
     setSelectedUsers(prev => 
       prev.includes(userId) 
         ? prev.filter(id => id !== userId) 
@@ -128,7 +132,6 @@ const PatientPage : React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <AppHeader />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </main>
@@ -138,7 +141,7 @@ const PatientPage : React.FC = () => {
 
  return (
   <div className="flex flex-col min-h-screen">
-    <AppHeader />
+
 
     <div className="max-w-3xl mx-auto">
       <Button 

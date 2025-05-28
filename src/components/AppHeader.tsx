@@ -26,10 +26,10 @@ const AppHeader: React.FC = () => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (isAuthenticated && user?.token && user?._id) {
+      if (user?.token) {
         setLoadingNotifications(true);
         try {
-          const data = await getNotificationsForUser(user._id, user.token);
+          const data = await getNotificationsForUser(user.token);
           setNotifications(data);
         } catch (error) {
           console.error('Failed to load notifications:', error);
@@ -41,12 +41,12 @@ const AppHeader: React.FC = () => {
 
     fetchNotifications();
   }, [isAuthenticated, user]);
-
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       if (user?.token) {
+        console.log('Marking notification as read:', notificationId);
         await markNotificationAsRead(notificationId, user.token);
         setNotifications(notifications.map(n => 
           n._id === notificationId ? { ...n, read: true } : n

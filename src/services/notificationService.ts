@@ -16,13 +16,15 @@ export interface Notification {
   createdAt: string;
 }
 
-export const getNotificationsForUser = async (userId: string, token: string): Promise<Notification[]> => {
+export const getNotificationsForUser = async (token: string): Promise<Notification[]> => {
   try {
-    const response = await axios.get(`${API_URL}/notifications/user/${userId}`, {
+    const response = await axios.get(`${API_URL}/notifications/user`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+        console.log('Fetched notifications:', response);
+
     return response.data;
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -33,7 +35,7 @@ export const getNotificationsForUser = async (userId: string, token: string): Pr
 
 export const markNotificationAsRead = async (notificationId: string, token: string): Promise<void> => {
   try {
-    await axios.patch(`${API_URL}/notifications/${notificationId}/read`, {}, {
+    await axios.put(`${API_URL}/notifications/read/${notificationId}`,{
       headers: {
         Authorization: `Bearer ${token}`,
       },

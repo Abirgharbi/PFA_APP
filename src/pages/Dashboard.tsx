@@ -24,7 +24,6 @@ const Dashboard: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  console.log('User:', user);
   useEffect(() => {
     if (!user) {
       navigate('/login');

@@ -65,7 +65,7 @@ const PatientPage : React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
 
 
         // Load available doctors
-        const response = await axios.get('http://localhost:3000/api/patients/');
+        const response = await axios.get('http://localhost:3000/api/doctors/my-patients');
             console.log("hello"+response);
         if (Array.isArray(response.data)) {
           const doctors = response.data.map(doctor => ({

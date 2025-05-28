@@ -22,6 +22,7 @@ const AppHeader: React.FC = () => {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const isDoctor = user?.role === 'doctor';
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -74,7 +75,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-medical text-white">
             <span className="font-bold text-lg">M</span>
           </div>
-          <span className="hidden sm:block text-lg font-semibold text-medical-dark">MediOCR</span>
+          <span className="hidden sm:block text-lg font-semibold text-medical-dark">MediArchive</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -90,6 +91,11 @@ const AppHeader: React.FC = () => {
               <Link to="/archive">
                 <Button variant="ghost">Archive</Button>
               </Link>
+                                {isDoctor && (
+      <Link to="/listPatients">
+        <Button variant="ghost">My Patients</Button>
+      </Link>
+    )}
             </>
           )}
         </nav>
@@ -200,48 +206,55 @@ const AppHeader: React.FC = () => {
               <Link to="/register">
                 <Button variant="default" className="bg-medical hover:bg-medical-dark">Register</Button>
               </Link>
+
             </>
           )}
         </div>
       </div>
 
       {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 md:hidden">
-          <Card className="absolute top-0 right-0 bottom-0 w-64 px-4 py-6 overflow-y-auto bg-white">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Menu</h2>
-              <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <nav className="flex flex-col space-y-2">
-              <Link to="/dashboard" onClick={toggleMobileMenu}>
-                <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
-              </Link>
-              <Link to="/scan" onClick={toggleMobileMenu}>
-                <Button variant="ghost" className="w-full justify-start">Scan Report</Button>
-              </Link>
-              <Link to="/archive" onClick={toggleMobileMenu}>
-                <Button variant="ghost" className="w-full justify-start">Archive</Button>
-              </Link>
-              <Link to="/profile" onClick={toggleMobileMenu}>
-                <Button variant="ghost" className="w-full justify-start">Profile</Button>
-              </Link>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-red-500 hover:bg-red-50 hover:text-red-600"
-                onClick={() => {
-                  logoutUser();
-                  toggleMobileMenu();
-                }}
-              >
-                Logout
-              </Button>
-            </nav>
-          </Card>
-        </div>
-      )}
+{mobileMenuOpen && (
+  <div className="fixed inset-0 z-50 bg-black bg-opacity-50 md:hidden">
+    <Card className="absolute top-0 right-0 bottom-0 w-64 px-4 py-6 overflow-y-auto bg-white">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-semibold">Menu</h2>
+        <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+          <X className="h-5 w-5" />
+        </Button>
+      </div>
+      <nav className="flex flex-col space-y-2">
+        <Link to="/dashboard" onClick={toggleMobileMenu}>
+          <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
+        </Link>
+        <Link to="/scan" onClick={toggleMobileMenu}>
+          <Button variant="ghost" className="w-full justify-start">Scan Report</Button>
+        </Link>
+        <Link to="/archive" onClick={toggleMobileMenu}>
+          <Button variant="ghost" className="w-full justify-start">Archive</Button>
+        </Link>
+        {isDoctor && (
+          <Link to="/listPatients" onClick={toggleMobileMenu}>
+            <Button variant="ghost" className="w-full justify-start">My Patients</Button>
+          </Link>
+        )}
+        <Link to="/profile" onClick={toggleMobileMenu}>
+          <Button variant="ghost" className="w-full justify-start">Profile</Button>
+        </Link>
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start text-red-500 hover:bg-red-50 hover:text-red-600"
+          onClick={() => {
+            logoutUser();
+            toggleMobileMenu();
+          }}
+        >
+          Logout
+        </Button>
+      </nav>
+    </Card>
+  </div>
+)}
+
     </header>
   );
 };

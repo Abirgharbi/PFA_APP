@@ -22,6 +22,7 @@ import { useIsMobile } from "./hooks/use-mobile";
 import ReportsAnalytics from "./pages/ReportsAnalytics";
 import SharedReportView from "./pages/SharedReportView";
 import SharedReportPage from "./pages/SharedReportPage";
+import PatientPage from "./pages/PatientPage";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,8 @@ const App = () => {
               <Route path="/profile" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
               <Route path="/shared/:id" element={<SharedReportView />} />
+              <Route path="/listPatients" element={<PatientPage/>} />
+              
             </Routes>
           </AuthProvider>
         </BrowserRouter>

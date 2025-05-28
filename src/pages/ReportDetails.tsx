@@ -173,7 +173,7 @@ const getOverallStatus = (): string => {
       <table className="min-w-full">
         <thead>
           <tr className="border-b">
-            <th className="text-left py-3 px-4 font-medium text-gray-600">Test</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-600"></th>
             <th className="text-left py-3 px-4 font-medium text-gray-600">Value</th>
             <th className="text-left py-3 px-4 font-medium text-gray-600">unité</th>
             <th className="text-left py-3 px-4 font-medium text-gray-600">Normal Range</th>
@@ -184,9 +184,9 @@ const getOverallStatus = (): string => {
           {Object.entries(report.ocrResult.tables).map(([tableName, parameters]) => (
             <React.Fragment key={tableName}>
               <tr>
-                <td colSpan={5} className="py-4 px-4 font-bold bg-gray-100 text-gray-800 text-left">
-                  {tableName}
-                </td>
+              <td colSpan={5} className="py-4 px-4 font-bold bg-gray-100 text-gray-800 text-center">
+  {tableName}
+</td>
               </tr>
               {parameters.map((param, index) => (
                 <tr key={index} className="border-b hover:bg-gray-50">

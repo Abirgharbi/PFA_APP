@@ -5,6 +5,15 @@ const API_URL = Capacitor.getPlatform() === 'web'
   ? 'http://localhost:3000/api'
   : 'http://10.0.2.2:3000/api';
 
+export const deletePatient = async (patientId: string, token: string) => {
+  console.log('Deleting patient with ID:', patientId);
+  const response = await axios.delete(`${API_URL}/doctors/patients/${patientId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
 export const getPatientById = async (patientId: string, token: string) => {
   try {
     const response = await axios.get(`${API_URL}/patients/${patientId}`, {

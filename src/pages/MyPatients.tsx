@@ -8,9 +8,9 @@ const MyPatients = () => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
   return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col h-screen">
         <AppHeader></AppHeader>
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex flex-1 bg-gray-50 overflow-hidden">
       {/* Sidebar - Patient Selection (1/3 width) */}
       <div className="w-1/3 p-4 border-r border-gray-200 overflow-y-auto">
         <PatientPage 

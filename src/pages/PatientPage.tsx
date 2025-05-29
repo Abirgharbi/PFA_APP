@@ -18,11 +18,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Copy, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 import { deletePatient, getMyPatient } from "@/services/patientService";
+import { sendInvitationByEmail } from "@/services/invitationService";
+import { Capacitor } from "@capacitor/core";
+import { isMobile } from "@/config";
 
 interface User {
   _id: string;
@@ -36,7 +39,6 @@ interface PatientSelectionProps {
 const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
   const { id } = useParams<{ id: string }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [email, setEmail] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const navigate = useNavigate();
@@ -47,7 +49,12 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const report = { _id: id, isPublic: true }; // Replace this with real report data or prop
+  const report = { _id: id, isPublic: true };
+  const url =
+    Capacitor.getPlatform() === "web"
+      ? `${window.location.origin}/addingpatient/`
+      : `myapp://addingpatient/`;
+  // Replace this with real report data or prop
   const handleDeletePatient = async (patientId: string) => {
     try {
       await deletePatient(patientId, user.token);
@@ -61,19 +68,19 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
       toast.error("Failed to delete patient");
     }
   };
-  const handleShareByEmail = async () => {
+  const handleShareByEmail = async (email: string) => {
     setIsSharing(true);
     try {
-      // TODO: Replace this with real API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await sendInvitationByEmail({ patientemail: email, token: user.token });
       toast.success("Link sent successfully");
-      setEmail("");
     } catch (err) {
       toast.error("Failed to send link");
+      console.error(err);
     } finally {
       setIsSharing(false);
     }
   };
+
   // Load report and available users
   useEffect(() => {
     const loadData = async () => {
@@ -107,6 +114,11 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
 
     loadData();
   }, [navigate, location.state]);
+  useEffect(() => {
+    if (!user || !user.token) {
+      navigate("/"); // Redirect to home if not authenticated
+    }
+  }, [user, navigate]);
 
   // Filter users based on search query
   useEffect(() => {
@@ -160,14 +172,170 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </main>
       </div>
     );
   }
+  if (isMobile) {
+    return (
+      <div className="flex flex-col ">
+        <div className="max-w-3xl w-full mx-auto ">
+          <Tabs defaultValue="users" className="w-full">
+            <TabsContent value="users">
+              <Card>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Select Patient</CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsModalOpen(true)}
+                      aria-label="Add Patient"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </CardHeader>
 
+                <CardContent>
+                  {isModalOpen && (
+                    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+                      <div className="bg-white rounded-xl w-full max-w-lg shadow-lg">
+                        <div className="p-6 border-b flex justify-between items-center">
+                          <h2 className="text-lg font-semibold">Add Patient</h2>
+                          <Button
+                            variant="ghost"
+                            onClick={() => setIsModalOpen(false)}
+                          >
+                            <X className="w-5 h-5" />
+                          </Button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                          {/* Shareable link section */}
+                          <div>
+                            <Label className="mb-2 block">Shareable link</Label>
+                            <div className="flex gap-2"></div>
+                          </div>
+
+                          {/* QR Code Section */}
+                          <div className="flex flex-col items-center gap-2">
+                            <Label>QR Code</Label>
+                            <QRCodeCanvas
+                              value={`${url}${user._id}`}
+                              size={128}
+                            />
+                          </div>
+
+                          {/* Email sharing section */}
+                          <div className="border-t pt-4">
+                            <Label className="mb-2 block">
+                              Send invitation via email
+                            </Label>
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="doctor@example.com"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                              />
+                              <Button
+                                onClick={() => handleShareByEmail(email)}
+                                disabled={isSharing || !report.isPublic}
+                                className="bg-medical hover:bg-medical-dark"
+                              >
+                                {isSharing ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Mail className="h-4 w-4 mr-2" />
+                                )}
+                                {isSharing ? "Sending..." : "Send"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search input */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search patients..."
+                      className="pl-10"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Users list */}
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => {
+                        const isSelected = selectedUsers.includes(user._id);
+                        return (
+                          <div
+                            key={user._id}
+                            className={cn(
+                              "flex items-center justify-between p-3 rounded-md border cursor-pointer",
+                              isSelected
+                                ? "border-medical bg-medical/10"
+                                : "border-gray-100 hover:bg-gray-50"
+                            )}
+                            onClick={() => toggleUserSelection(user._id)}
+                          >
+                            <div className="flex items-center">
+                              <Avatar className="h-9 w-9 mr-3">
+                                <AvatarFallback>
+                                  {getAvatarFallback(user.fullName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">
+                                  {user.fullName}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {user.email}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 items-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent toggle when clicking delete
+                                  handleDeletePatient(user._id);
+                                }}
+                                className="p-1"
+                                aria-label="Delete patient"
+                              >
+                                <X className="h-4 w-4 text-gray-600 hover:text-red-600" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-8">
+                        <Search className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500">
+                          {searchQuery
+                            ? "No matching patient found"
+                            : "No patients available"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col ">
       <div className="max-w-3xl w-full mx-auto ">
@@ -210,7 +378,7 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
                         <div className="flex flex-col items-center gap-2">
                           <Label>QR Code</Label>
                           <QRCodeCanvas
-                            value={`${window.location.origin}/shared/${report._id}`}
+                            value={`${url}${user._id}`}
                             size={128}
                           />
                         </div>
@@ -228,7 +396,7 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
                               onChange={(e) => setEmail(e.target.value)}
                             />
                             <Button
-                              onClick={handleShareByEmail}
+                              onClick={() => handleShareByEmail(email)}
                               disabled={isSharing || !report.isPublic}
                               className="bg-medical hover:bg-medical-dark"
                             >

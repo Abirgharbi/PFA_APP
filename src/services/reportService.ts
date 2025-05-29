@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { Preferences } from '@capacitor/preferences';
-import { Capacitor } from '@capacitor/core';
 
 export interface ReportStat {
   champ: string;
@@ -15,9 +14,8 @@ export interface ReportAnalytics {
   resulte: ReportStat[];
 }
 
-const API_URL = Capacitor.getPlatform() === 'web'
-  ? 'http://localhost:3000/api'
-  : 'http://10.0.2.2:3000/api';
+import { API_URL } from '@/config'; // adjust the path if needed
+;
 
 const getToken = async (): Promise<string | null> => {
   const token = await Preferences.get({ key: 'userToken' });
@@ -37,5 +35,45 @@ export const fetchReportAnalytics = async (patientId: string): Promise<ReportAna
     }
   });
 
+  return response.data;
+};
+
+export const getDoctors = async (token: string) => {
+  console.log('Fetching doctors with token:', token);
+  const response = await axios.get(`${API_URL}/patients/mydoctors`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const updateVisibility = async (
+  reportId: string,
+  isPublic: boolean,
+  token: string
+) => {
+  const response = await axios.patch(
+    `${API_URL}/uploads/${reportId}/visibility`,
+    { isPublic },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return response.data;
+};
+
+export const shareReportWithUsers = async (
+  reportId: string,
+  userIds: string[],
+  token: string
+) => {
+  console.log('Sharing report with users:', { reportId, userIds, token });
+  const response = await axios.put(
+    `${API_URL}/uploads/multi/${reportId}`,
+    { sharedWith:userIds },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  console.log('Response from sharing report with users:', response.data);
   return response.data;
 };

@@ -23,6 +23,7 @@ import SharedReportView from "./pages/SharedReportView";
 import SharedReportPage from "./pages/SharedReportPage";
 import PatientPage from "./pages/PatientPage";
 import MyPatients from "./pages/MyPatients";
+import AddPatientPage from "./pages/AddPatientPage";
 
 const queryClient = new QueryClient();
 
@@ -64,8 +65,11 @@ const App = () => {
               <Route path="/profile" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
               <Route path="/shared/:id" element={<SharedReportView />} />
-              <Route path="/listPatients" element={<MyPatients/>} />
-              
+              <Route path="/listPatients" element={<MyPatients />} />
+              <Route
+                path="/addingpatient/:idoctor"
+                element={<AddPatientPage />}
+              />
             </Routes>
           </AuthProvider>
         </BrowserRouter>
@@ -75,4 +79,3 @@ const App = () => {
 };
 
 export default App;
-  

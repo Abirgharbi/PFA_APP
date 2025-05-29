@@ -1,20 +1,31 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  FileText,
+  Upload,
+  Share2,
+  Calendar,
+  Plus,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import AppHeader from "@/components/AppHeader";
+import ReportCard from "@/components/ReportCard";
+import { Report } from "@/models/report";
+import { getReportsForUser } from "@/services/archiveService";
+import { getNotificationsForUser } from "@/services/notificationService";
+import { AlertTriangle } from "lucide-react";
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Upload, Share2, BarChart2, Calendar, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import AppHeader from '@/components/AppHeader';
-import ReportCard from '@/components/ReportCard';
-import { Report } from '@/models/report';
-import { getReportsForUser } from '@/services/archiveService';
-import { getNotificationsForUser } from '@/services/notificationService';
-
-
-import { toast } from 'sonner';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Preferences } from '@capacitor/preferences';
+import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard: React.FC = () => {
   const { user, isDoctor } = useAuth();
@@ -26,7 +37,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -40,12 +51,12 @@ const Dashboard: React.FC = () => {
           setReports(reportsData);
 
           // // Load notifications from API
-          // const notificationsData = await getNotificationsForUser(user._id, user.token);
-          // setNotifications(notificationsData);
+          const notificationsData = await getNotificationsForUser(user.token);
+          setNotifications(notificationsData);
         }
       } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        toast.error('Failed to load dashboard data');
+        console.error("Error loading dashboard data:", error);
+        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
@@ -53,7 +64,31 @@ const Dashboard: React.FC = () => {
 
     loadData();
   }, [user, navigate]);
+    useEffect(() => {
 
+
+    const loadDatanotif = async () => {
+      try {
+
+        // Load reports from API
+        if (user?.token) {
+          const reportsData = await getReportsForUser(user.token);
+          setReports(reportsData);
+
+          // // Load notifications from API
+          const notificationsData = await getNotificationsForUser(user.token);
+          setNotifications(notificationsData);
+        }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDatanotif();
+  }, [notifications]);
   const handleShare = (report: Report) => {
     navigate(`/share/${report._id}`, { state: { report } });
   };
@@ -78,7 +113,9 @@ const Dashboard: React.FC = () => {
           <section className="mb-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome, {user?.name}
+                </h1>
                 <p className="text-gray-600 mt-1">
                   {isDoctor
                     ? "Manage your patients' medical records and reports"
@@ -87,18 +124,15 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
                 <Button
-                  onClick={() => navigate('/scan')}
+                  onClick={() => navigate("/scan")}
                   className="bg-medical hover:bg-medical-dark"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {isMobile ? 'Scan Report' : 'Scan New Report'}
+                  {isMobile ? "Scan Report" : "Scan New Report"}
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/archive')}
-                >
+                <Button variant="outline" onClick={() => navigate("/archive")}>
                   <FileText className="h-4 w-4 mr-2" />
-                  {isMobile ? 'Archive' : 'View All Reports'}
+                  {isMobile ? "Archive" : "View All Reports"}
                 </Button>
               </div>
             </div>
@@ -119,7 +153,7 @@ const Dashboard: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate('/archive')}
+                    onClick={() => navigate("/archive")}
                   >
                     View All
                   </Button>
@@ -131,7 +165,7 @@ const Dashboard: React.FC = () => {
                         <ReportCard
                           key={report._id}
                           report={report}
-                          view={'grid'}
+                          view={"grid"}
                           onShare={handleShare}
                         />
                       ))}
@@ -139,9 +173,11 @@ const Dashboard: React.FC = () => {
                   ) : (
                     <div className="text-center py-8">
                       <FileText className="h-10 w-10 mx-auto text-gray-400 mb-2" />
-                      <p className="text-gray-500 mb-4">You don't have any reports yet</p>
+                      <p className="text-gray-500 mb-4">
+                        You don't have any reports yet
+                      </p>
                       <Button
-                        onClick={() => navigate('/scan')}
+                        onClick={() => navigate("/scan")}
                         className="bg-medical hover:bg-medical-dark"
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -158,19 +194,19 @@ const Dashboard: React.FC = () => {
                   icon={<Upload className="h-6 w-6 text-medical" />}
                   title="Scan Report"
                   description="Digitize a new medical report"
-                  onClick={() => navigate('/scan')}
+                  onClick={() => navigate("/scan")}
                 />
                 <QuickActionCard
                   icon={<FileText className="h-6 w-6 text-patient" />}
                   title="Browse Archive"
                   description="View all your medical records"
-                  onClick={() => navigate('/archive')}
+                  onClick={() => navigate("/archive")}
                 />
                 <QuickActionCard
                   icon={<Share2 className="h-6 w-6 text-emerald-500" />}
                   title="Share Reports"
                   description="Share reports with others"
-                  onClick={() => navigate('/archive')}
+                  onClick={() => navigate("/archive")}
                 />
               </div>
             </div>
@@ -196,17 +232,27 @@ const Dashboard: React.FC = () => {
                           }}
                         >
                           <div
-                            className={`w-2 h-2 rounded-full mt-2 mr-3 ${notification.type === 'warning' ? 'bg-yellow-500' :
-                              notification.type === 'error' ? 'bg-red-500' :
-                                notification.type === 'success' ? 'bg-green-500' :
-                                  'bg-blue-500'
-                              }`}
+                            className={`w-2 h-2 rounded-full mt-2 mr-3 ${
+                              notification.type === "warning"
+                                ? "bg-yellow-500"
+                                : notification.type === "error"
+                                ? "bg-red-500"
+                                : notification.type === "success"
+                                ? "bg-green-500"
+                                : "bg-blue-500"
+                            }`}
                           />
                           <div>
-                            <p className="font-medium text-sm">{notification.title}</p>
-                            <p className="text-gray-600 text-sm">{notification.message}</p>
+                            <p className="font-medium text-sm">
+                              {notification.title}
+                            </p>
+                            <p className="text-gray-600 text-sm">
+                              {notification.message}
+                            </p>
                             <p className="text-gray-400 text-xs mt-1">
-                              {new Date(notification.createdAt).toLocaleDateString()}
+                              {new Date(
+                                notification.createdAt
+                              ).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -223,7 +269,11 @@ const Dashboard: React.FC = () => {
                     <Button
                       variant="ghost"
                       className="w-full"
-                      onClick={() => toast.info("Viewing all notifications is not implemented in this demo")}
+                      onClick={() =>
+                        toast.info(
+                          "Viewing all notifications is not implemented in this demo"
+                        )
+                      }
                     >
                       View All Notifications
                     </Button>
@@ -240,26 +290,50 @@ const Dashboard: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {reports.some(r => r.followUpDate) ? (
+                  {notifications.some((n) => n.type === "follow-up") ? (
                     <div className="space-y-3">
-                      {reports
-                        .filter(r => r.followUpDate)
+                      {notifications
+                        .filter((n) => n.type === "follow-up")
                         .slice(0, 3)
-                        .map(report => (
-                          <div
-                            key={report._id}
-                            className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
-                            onClick={() => navigate(`/report/${report._id}`)}
-                          >
-                            <div className="mr-3 bg-medical/10 text-medical p-2 rounded-md">
-                              <Calendar className="h-4 w-4" />
+                        .map((notif) => {
+                          const followUpDate = new Date(notif.datefollowup);
+                          const today = new Date();
+                          const diffInDays =
+                            (followUpDate.getTime() - today.getTime()) /
+                            (1000 * 60 * 60 * 24);
+
+                          const isUrgent = diffInDays >= 0 && diffInDays <= 3;
+                          console.log(isUrgent);
+
+                          return (
+                            <div
+                              key={notif.id}
+                              className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                              onClick={() => {
+                                if (notif.reportId)
+                                  navigate(`/report/${notif.reportId}`);
+                              }}
+                            >
+                              <div className="mr-3 bg-medical/10 text-medical p-2 rounded-md relative">
+                                <Calendar className="h-4 w-4" />
+                                {isUrgent && (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 absolute -top-2 -right-2" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {notif.title}
+                                </p>
+                                <p className="text-gray-600 text-xs">
+                                  {notif.message}
+                                </p>
+                                <p className="text-gray-400 text-xs mt-1">
+                                  {followUpDate.toLocaleDateString()}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-sm">{report.title}</p>
-                              <p className="text-gray-600 text-xs">Follow-up on {report.followUpDate}</p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
                   ) : (
                     <div className="text-center py-6">
@@ -284,11 +358,12 @@ const QuickActionCard: React.FC<{
   onClick: () => void;
 }> = ({ icon, title, description, onClick }) => {
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
+    <Card
+      className="hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onClick}
+    >
       <CardContent className="p-6 flex flex-col items-center text-center">
-        <div className="mb-3 p-3 rounded-full bg-gray-100">
-          {icon}
-        </div>
+        <div className="mb-3 p-3 rounded-full bg-gray-100">{icon}</div>
         <h3 className="font-semibold mb-1">{title}</h3>
         <p className="text-sm text-gray-600">{description}</p>
       </CardContent>

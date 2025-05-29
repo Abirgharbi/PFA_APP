@@ -1,131 +1,139 @@
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { 
-  User, 
-  Mail, 
-  Building, 
-  Award, 
-  AtSign, 
-  Calendar, 
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  User,
+  Mail,
+  Building,
+  Award,
+  AtSign,
+  Calendar,
   Camera,
   Lock,
-  LogOut
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from 'sonner';
-import AppHeader from '@/components/AppHeader';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+  LogOut,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import AppHeader from "@/components/AppHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const UserProfile: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    specialization: '',
-    hospital: '',
-    bio: ''
+    name: "",
+    email: "",
+    specialization: "",
+    hospital: "",
+    bio: "",
   });
-  
+
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
-  
+
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  
+
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
-    
+
     // Populate form with user data
     if (user) {
       setFormData({
         name: user.name,
         email: user.email,
-        specialization: user.role === 'doctor' ? 'Cardiologist' : '',
-        hospital: user.role === 'doctor' ? 'Central Hospital' : '',
-        bio: ''
+        specialization: user.role === "doctor" ? "Cardiologist" : "",
+        hospital: user.role === "doctor" ? "Central Hospital" : "",
+        bio: "",
       });
     }
   }, [user, isAuthenticated, navigate]);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPasswordForm(prev => ({ ...prev, [name]: value }));
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    
+
     try {
       // In a real app, this would send data to an API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Profile updated successfully');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      toast.success("Profile updated successfully");
     } catch (error) {
-      toast.error('Failed to update profile');
+      toast.error("Failed to update profile");
       console.error(error);
     } finally {
       setIsSaving(false);
     }
   };
-  
+
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error("New passwords do not match");
       return;
     }
-    
+
     if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+      toast.error("Password must be at least 6 characters long");
       return;
     }
-    
+
     setIsChangingPassword(true);
-    
+
     try {
       // In a real app, this would send data to an API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Password updated successfully');
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      toast.success("Password updated successfully");
+
       // Reset the form
       setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
     } catch (error) {
-      toast.error('Failed to update password');
+      toast.error("Failed to update password");
       console.error(error);
     } finally {
       setIsChangingPassword(false);
     }
   };
-  
+
   if (!user) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -139,22 +147,22 @@ const UserProfile: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="flex flex-col min-h-screen">
       <AppHeader />
-      
+
       <main className="flex-1 px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
-          
+
           <Tabs defaultValue="profile">
             <TabsList className="mb-8">
               <TabsTrigger value="profile">Profile Information</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="profile">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Profile Photo Section */}
@@ -170,18 +178,25 @@ const UserProfile: React.FC = () => {
                       <Avatar className="w-32 h-32">
                         <AvatarImage src={user.profileImage} alt={user.name} />
                         <AvatarFallback className="text-2xl">
-                          {user.name.split(' ').map(n => n[0]).join('')}
+                          {user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute bottom-0 right-0 p-1 bg-white rounded-full shadow-md">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-medical text-white">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-medical text-white"
+                        >
                           <Camera className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 {/* Profile Information Form */}
                 <Card className="md:col-span-2">
                   <CardHeader>
@@ -216,11 +231,13 @@ const UserProfile: React.FC = () => {
                             />
                           </div>
                         </div>
-                        
-                        {user.role === 'doctor' && (
+
+                        {user.role === "doctor" && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <Label htmlFor="specialization">Specialization</Label>
+                              <Label htmlFor="specialization">
+                                Specialization
+                              </Label>
                               <Input
                                 id="specialization"
                                 name="specialization"
@@ -239,7 +256,7 @@ const UserProfile: React.FC = () => {
                             </div>
                           </div>
                         )}
-                        
+
                         <div>
                           <Label htmlFor="bio">Bio</Label>
                           <Textarea
@@ -251,14 +268,14 @@ const UserProfile: React.FC = () => {
                             placeholder="Tell us a bit about yourself"
                           />
                         </div>
-                        
+
                         <div className="flex justify-end">
-                          <Button 
-                            type="submit" 
+                          <Button
+                            type="submit"
                             className="bg-medical hover:bg-medical-dark"
                             disabled={isSaving}
                           >
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                            {isSaving ? "Saving..." : "Save Changes"}
                           </Button>
                         </div>
                       </div>
@@ -267,7 +284,7 @@ const UserProfile: React.FC = () => {
                 </Card>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="security">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <Card className="md:col-span-2">
@@ -281,7 +298,9 @@ const UserProfile: React.FC = () => {
                     <form onSubmit={handlePasswordUpdate}>
                       <div className="space-y-4">
                         <div>
-                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <Label htmlFor="currentPassword">
+                            Current Password
+                          </Label>
                           <Input
                             id="currentPassword"
                             name="currentPassword"
@@ -303,7 +322,9 @@ const UserProfile: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                          <Label htmlFor="confirmPassword">
+                            Confirm New Password
+                          </Label>
                           <Input
                             id="confirmPassword"
                             name="confirmPassword"
@@ -313,21 +334,23 @@ const UserProfile: React.FC = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="flex justify-end">
-                          <Button 
-                            type="submit" 
+                          <Button
+                            type="submit"
                             className="bg-medical hover:bg-medical-dark"
                             disabled={isChangingPassword}
                           >
-                            {isChangingPassword ? 'Updating...' : 'Update Password'}
+                            {isChangingPassword
+                              ? "Updating..."
+                              : "Update Password"}
                           </Button>
                         </div>
                       </div>
                     </form>
                   </CardContent>
                 </Card>
-                
+
                 <div className="space-y-6">
                   <Card>
                     <CardHeader>
@@ -350,15 +373,16 @@ const UserProfile: React.FC = () => {
                           <div className="p-3 bg-gray-50 rounded-md">
                             <div className="text-sm mb-1">Current Session</div>
                             <div className="text-xs text-gray-500">
-                              Last active: Today at {new Date().toLocaleTimeString()}
+                              Last active: Today at{" "}
+                              {new Date().toLocaleTimeString()}
                             </div>
                           </div>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         className="w-full"
                         onClick={logout}
                       >
@@ -370,7 +394,7 @@ const UserProfile: React.FC = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="notifications">
               <Card>
                 <CardHeader>
@@ -382,30 +406,38 @@ const UserProfile: React.FC = () => {
                 <CardContent>
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-lg font-medium mb-2">Email Notifications</h3>
+                      <h3 className="text-lg font-medium mb-2">
+                        Email Notifications
+                      </h3>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <Label htmlFor="notification-new-reports">New reports</Label>
-                          <input 
-                            type="checkbox" 
+                          <Label htmlFor="notification-new-reports">
+                            New reports
+                          </Label>
+                          <input
+                            type="checkbox"
                             id="notification-new-reports"
                             className="toggle"
                             defaultChecked
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <Label htmlFor="notification-shared-reports">Shared with you</Label>
-                          <input 
-                            type="checkbox" 
+                          <Label htmlFor="notification-shared-reports">
+                            Shared with you
+                          </Label>
+                          <input
+                            type="checkbox"
                             id="notification-shared-reports"
                             className="toggle"
                             defaultChecked
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <Label htmlFor="notification-followups">Follow-up reminders</Label>
-                          <input 
-                            type="checkbox" 
+                          <Label htmlFor="notification-followups">
+                            Follow-up reminders
+                          </Label>
+                          <input
+                            type="checkbox"
                             id="notification-followups"
                             className="toggle"
                             defaultChecked
@@ -413,34 +445,42 @@ const UserProfile: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div>
-                      <h3 className="text-lg font-medium mb-2">App Notifications</h3>
+                      <h3 className="text-lg font-medium mb-2">
+                        App Notifications
+                      </h3>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <Label htmlFor="notification-app-new">New report notifications</Label>
-                          <input 
-                            type="checkbox" 
+                          <Label htmlFor="notification-app-new">
+                            New report notifications
+                          </Label>
+                          <input
+                            type="checkbox"
                             id="notification-app-new"
                             className="toggle"
                             defaultChecked
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <Label htmlFor="notification-app-shared">Share notifications</Label>
-                          <input 
-                            type="checkbox" 
+                          <Label htmlFor="notification-app-shared">
+                            Share notifications
+                          </Label>
+                          <input
+                            type="checkbox"
                             id="notification-app-shared"
                             className="toggle"
                             defaultChecked
                           />
                         </div>
                         <div className="flex justify-between items-center">
-                          <Label htmlFor="notification-app-reminders">Reminder notifications</Label>
-                          <input 
-                            type="checkbox" 
+                          <Label htmlFor="notification-app-reminders">
+                            Reminder notifications
+                          </Label>
+                          <input
+                            type="checkbox"
                             id="notification-app-reminders"
                             className="toggle"
                             defaultChecked
@@ -451,8 +491,10 @@ const UserProfile: React.FC = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    onClick={() => toast.success('Notification preferences saved')}
+                  <Button
+                    onClick={() =>
+                      toast.success("Notification preferences saved")
+                    }
                     className="bg-medical hover:bg-medical-dark"
                   >
                     Save Preferences

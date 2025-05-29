@@ -1,20 +1,21 @@
 import axios from 'axios';
-import { Capacitor } from '@capacitor/core';
-
-const API_URL = Capacitor.getPlatform() === 'web'
-  ? 'http://localhost:3000/api'
-  : 'http://10.0.2.2:3000/api';
+import { API_URL } from '@/config'; // adjust the path if needed
 
 export interface Notification {
   _id: string;
   userId: string;
   title: string;
   message: string;
-  type: "info" | "warning" | "success" | "error";
+  type: "info" | "warning" | "success" | "error"| "follow-up";
   read: boolean;
+  datefollowup?:Date;
   reportId?: string;
   createdAt: string;
 }
+
+export const createFollowUp = (patientId: string, date: string, details: string) => {
+  return axios.post(`${API_URL}/notifications/followups`, { patientId, followUpDate: date, details });
+};
 
 export const getNotificationsForUser = async (token: string): Promise<Notification[]> => {
   try {
@@ -46,17 +47,3 @@ export const markNotificationAsRead = async (notificationId: string, token: stri
   }
 };
 
-// Mock data for development
-export const mockNotifications: Notification[] = [
-  {
-    _id: "n1",
-    userId: "p1",
-    title: "Follow-up Required",
-    message: "Your chest X-ray requires a follow-up",
-    type: "warning",
-    read: false,
-    reportId: "r2",
-    createdAt: "2025-02-12T14:30:00Z"
-  },
-  // Add more mock notifications as needed
-];

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getSharedReport } from '@/services/archiveService';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, FileText } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { getSharedReport } from "@/services/archiveService";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Download, FileText } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const SharedReportPage = () => {
   const { id } = useParams();
@@ -14,11 +14,11 @@ const SharedReportPage = () => {
     const loadReport = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const email = urlParams.get('email');
+        const email = urlParams.get("email");
         const reportData = await getSharedReport(id!, email || undefined);
         setReport(reportData);
       } catch (error) {
-        navigate('/error', { state: { message: 'Rapport non disponible' } });
+        navigate("/error", { state: { message: "Rapport non disponible" } });
       }
     };
 
@@ -27,7 +27,7 @@ const SharedReportPage = () => {
 
   if (!report) return <div>Chargement...</div>;
 
- return (
+  return (
     <div className="container mx-auto p-4">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
         <ArrowLeft className="mr-2" /> Retour
@@ -43,7 +43,7 @@ const SharedReportPage = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="font-medium">Patient</p>
-              <p>{report.patientName || 'Non spécifié'}</p>
+              <p>{report.patientName || "Non spécifié"}</p>
             </div>
             <div>
               <p className="font-medium">Date</p>
@@ -68,9 +68,9 @@ const SharedReportPage = () => {
                   </Button>
                 </a>
               </div>
-              <img 
-                src={report.imageUrl} 
-                alt="Rapport médical" 
+              <img
+                src={report.imageUrl}
+                alt="Rapport médical"
                 className="max-w-full h-auto rounded border"
               />
             </div>

@@ -101,13 +101,13 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
             onClick={takePhoto}
             className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
           >
-            📷 Prendre une photo
+             Prendre une photo
           </button>
           <button
             onClick={triggerFileInput}
             className="w-full sm:w-auto bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded-lg transition"
           >
-            🖼️ Importer une image
+             Importer une image
           </button>
         </div>
       )}

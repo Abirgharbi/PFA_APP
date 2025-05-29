@@ -1,10 +1,7 @@
-import { Capacitor } from '@capacitor/core';
 import axios from 'axios';
 
-const API_URL =
-  Capacitor.getPlatform() === 'web'
-    ? 'http://localhost:3000/api'
-    : 'http://10.0.2.2:3000/api';
+import { API_URL } from '@/config'; // adjust the path if needed
+
 
 export const getReportsForUser = async (token: string) => {
   try {

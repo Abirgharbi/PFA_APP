@@ -1,7 +1,7 @@
 // src/pages/VerifyCode.tsx
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -9,63 +9,66 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import AppHeader from '@/components/AppHeader'
-import { toast } from 'sonner'
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import AppHeader from "@/components/AppHeader";
+import { toast } from "sonner";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from '@/components/ui/input-otp'
+} from "@/components/ui/input-otp";
 
 const VerifyCode: React.FC = () => {
-  const [verificationCode, setVerificationCode] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { verifyTwoFactorCode, pendingTwoFactorAuth, generateTwoFactorCode } =
-    useAuth()
-  const navigate = useNavigate()
+    useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!pendingTwoFactorAuth) {
-      navigate('/login')
+      navigate("/login");
     }
-  }, [pendingTwoFactorAuth, navigate])
+  }, [pendingTwoFactorAuth, navigate]);
 
   const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!pendingTwoFactorAuth) return
+    e.preventDefault();
+    if (!pendingTwoFactorAuth) return;
     if (verificationCode.length !== 6) {
-      toast.error('Enter a valid 6-digit code')
-      return
+      toast.error("Enter a valid 6-digit code");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-const success = await verifyTwoFactorCode(pendingTwoFactorAuth.email, verificationCode);
-console.log('Verification result:', success); 
+      const success = await verifyTwoFactorCode(
+        pendingTwoFactorAuth.email,
+        verificationCode
+      );
+      console.log("Verification result:", success);
       if (success) {
-        toast.success('Verification successful')
-        navigate('/dashboard')
+        toast.success("Verification successful");
+        navigate("/dashboard");
       } else {
-        toast.error('Invalid code')
+        toast.error("Invalid code");
       }
     } catch (err) {
-      toast.error('Verification failed')
+      toast.error("Verification failed");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleResend = async () => {
-    if (!pendingTwoFactorAuth) return
+    if (!pendingTwoFactorAuth) return;
     try {
-await generateTwoFactorCode(pendingTwoFactorAuth.email);
-      toast.success(`Code resent to ${pendingTwoFactorAuth.email}`)
+      await generateTwoFactorCode(pendingTwoFactorAuth.email);
+      toast.success(`Code resent to ${pendingTwoFactorAuth.email}`);
     } catch {
-      toast.error('Could not resend code')
+      toast.error("Could not resend code");
     }
-  }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -102,7 +105,7 @@ await generateTwoFactorCode(pendingTwoFactorAuth.email);
                   className="w-full bg-medical hover:bg-medical-dark"
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Verifying...' : 'Verify'}
+                  {isLoading ? "Verifying..." : "Verify"}
                 </Button>
                 <div className="text-center">
                   <Button variant="link" type="button" onClick={handleResend}>
@@ -120,7 +123,7 @@ await generateTwoFactorCode(pendingTwoFactorAuth.email);
         </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default VerifyCode
+export default VerifyCode;

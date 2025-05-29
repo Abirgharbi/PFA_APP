@@ -1,12 +1,8 @@
-import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import axios from 'axios';
 
-// API URL — adjust as needed for development/production
-const API_URL =
-  Capacitor.getPlatform() === 'web'
-    ? 'http://localhost:3000'
-    : 'http://192.168.1.17:3000'; // replace with your local IP
+import { API_URL } from '@/config'; // adjust the path if needed
+
 
 // Interfaces for structured OCR response
 export interface OCRTestResult {

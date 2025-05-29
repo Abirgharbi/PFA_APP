@@ -195,10 +195,10 @@ const Index: React.FC = () => {
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-medical text-white mr-2">
                 <span className="font-bold text-sm">M</span>
               </div>
-              <span className="text-lg font-semibold text-medical-dark">MediOCR</span>
+              <span className="text-lg font-semibold text-medical-dark">MediArchive</span>
             </div>
             <div className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} MediOCR. All rights reserved.
+              © {new Date().getFullYear()} MediArchive. All rights reserved.
             </div>
           </div>
         </div>

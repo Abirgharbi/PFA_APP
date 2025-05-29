@@ -1,10 +1,30 @@
 import axios from 'axios';
-import { Capacitor } from '@capacitor/core';
+import { API_URL } from '@/config'; // adjust the path if needed
 
-const API_URL = Capacitor.getPlatform() === 'web'
-  ? 'http://localhost:3000/api'
-  : 'http://10.0.2.2:3000/api';
+interface AddPatientResponse {
+  message: string;
+}
+interface verifParams {
+  idoctor: string;
+  token?: string;
+}
+export const addPatientToDoctor = async ({
+  idoctor,
+  token
+}: verifParams): Promise<AddPatientResponse> => {
+const response = await axios.post<AddPatientResponse>(
+  `${API_URL}/patients/addingpatient/${idoctor}`,
+  {}, // empty body (or your data if needed)
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
+
+  return response.data;
+};
 export const deletePatient = async (patientId: string, token: string) => {
   console.log('Deleting patient with ID:', patientId);
   const response = await axios.delete(`${API_URL}/doctors/patients/${patientId}`, {

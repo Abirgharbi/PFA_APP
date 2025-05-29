@@ -1,34 +1,15 @@
 import { Preferences } from '@capacitor/preferences';
 import axios from 'axios';
-import { Capacitor } from '@capacitor/core';
+import { API_URL } from '@/config'; // adjust the path if needed
+import { User, LoginData } from '../models/authModel'; // ✅ Import here
 
-
-// Backend URL
-const API_URL =
-  Capacitor.getPlatform() === 'web'
-    ? 'http://localhost:3000/api/auth'
-    : 'http://192.168.1.17:3000/api/auth'; 
-
-// Interface User
-interface User {
-  fullName: string;
-  email: string;
-  password: string;
-  role?: 'patient' | 'doctor'; // Optional role for registration
-}
-
-// Interface Login
-interface LoginData {
-  email: string;
-  password: string;
-}
 
 // Save token in Preferences
 const saveToken = async (token: string) => {
   try {
     await Preferences.set({
       key: 'userToken',
-      value: token, // Save token under the key 'userToken'
+      value: token,
     });
   } catch (error) {
     console.error('Error saving token:', error);
@@ -38,10 +19,10 @@ const saveToken = async (token: string) => {
 // Register Patient
 export const registerPatient = async (user: User) => {
   try {
-    const response = await axios.post(`${API_URL}/register/patient`, user);
-    const { token } = response.data; // Assuming token is returned after registration
-    await saveToken(token); // Save token after successful registration
-    return response.data; // user + token
+    const response = await axios.post(`${API_URL}/auth/register/patient`, user);
+    const { token } = response.data;
+    await saveToken(token);
+    return response.data;
   } catch (error) {
     console.error('Error registering patient:', error);
     throw error;
@@ -51,15 +32,15 @@ export const registerPatient = async (user: User) => {
 // Register Doctor
 export const registerDoctor = async (user: User) => {
   try {
-const response = await axios.post(`${API_URL}/register/doctor`, {
-  fullName: user.fullName,
-  email: user.email,
-  password: user.password
-});
+    const response = await axios.post(`${API_URL}/auth/register/doctor`, {
+      fullName: user.fullName,
+      email: user.email,
+      password: user.password,
+    });
 
-    const { token } = response.data; // Assuming token is returned after registration
-    await saveToken(token); // Save token after successful registration
-    return response.data; // user + token
+    const { token } = response.data;
+    await saveToken(token);
+    return response.data;
   } catch (error) {
     console.error('Error registering doctor:', error);
     throw error;
@@ -67,77 +48,64 @@ const response = await axios.post(`${API_URL}/register/doctor`, {
 };
 
 // Login
-export async function login(data: { email: string, password: string }) {
+export async function login(data: LoginData) {
   try {
-        const response = await axios.post(`${API_URL}/login`,data);
-    const { token } = response.data; // Assuming token is returned after login
-    await saveToken(token); // Save token after successful login
-    console.log('Login response:', response.data); 
-    return response.data; 
+    const response = await axios.post(`${API_URL}/auth/login`, data);
+    const { token } = response.data;
+    await saveToken(token);
+    console.log('Login response:', response.data);
+    return response.data;
   } catch (error) {
     console.error('Error during login:', error);
     throw error;
   }
-};
+}
 
-// Retrieve token from Preferences
+// Retrieve token
 export const getToken = async () => {
   try {
     const { value } = await Preferences.get({ key: 'userToken' });
-    return value; // returns token or null if not found
+    return value;
   } catch (error) {
     console.error('Error getting token:', error);
     return null;
   }
-};
+}
 
-// Remove token from Preferences (e.g., during logout)
+// Remove token
 export const removeToken = async () => {
   try {
     await Preferences.remove({ key: 'userToken' });
   } catch (error) {
     console.error('Error removing token:', error);
   }
-};
+}
 
+// Verify 2FA
 export async function verifyTwoFactorCodeAPI(email: string, code: string) {
   try {
-
-    const response = await axios.post(`${API_URL}/verify2FA`, {
-      email,
-      code,
-    });
+    const response = await axios.post(`${API_URL}/auth/verify2FA`, { email, code });
 
     const { token, user, role } = response.data;
 
     if (token && user) {
-      await Preferences.set({
-        key: 'userToken',
-        value: token,
-      });
-      await Preferences.set({
-        key: 'userName',
-        value: user.fullName || '',
-      });
-      await Preferences.set({
-        key: 'userEmail',
-        value: user.email,
-      });
-            await Preferences.set({
-        key: 'userRole',
-        value: role,
-      });
+      
+      await Preferences.set({ key: 'userToken', value: token });
+      await Preferences.set({ key: 'userName', value: user.fullName || '' });
+      await Preferences.set({ key: 'userId', value: user._id });
+      await Preferences.set({ key: 'userEmail', value: user.email });
+      await Preferences.set({ key: 'userRole', value: role });
     }
-    return true; // Return success status
+
+    return true;
   } catch (error) {
     console.error('Error verifying 2FA code:', error);
-    return false; // Return failure status
+    return false;
   }
 }
 
+// Generate 2FA code
 export async function generateTwoFactorCodeAPI(email: string) {
-  const response = await axios.post(`${API_URL}/resend-2fa`, {
-    email
-  });
+  const response = await axios.post(`${API_URL}/auth/resend-2fa`, { email });
   return response.data;
 }

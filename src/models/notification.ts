@@ -21,20 +21,6 @@ export function getNotificationColor(type: Notification["type"]): string {
   return colors[type];
 }
 
-// Mock data - keep for development
-export const mockNotifications: Notification[] = [
-  {
-    _id: "n1",
-    userId: "p1",
-    title: "Follow-up Required",
-    message: "Your chest X-ray requires a follow-up in 3 months (May 12, 2025)",
-    type: "warning",
-    read: false,
-    reportId: "r2",
-    createdAt: "2025-02-12T14:30:00Z"
-  },
-  // ... other mock notifications
-];
 
 
 

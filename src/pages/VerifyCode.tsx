@@ -114,11 +114,6 @@ const VerifyCode: React.FC = () => {
                 </div>
               </form>
             </CardContent>
-            <CardFooter>
-              <p className="text-center text-sm text-gray-600 mt-2 w-full">
-                For demo: check console for code
-              </p>
-            </CardFooter>
           </Card>
         </div>
       </main>

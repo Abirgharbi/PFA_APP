@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 const platform = Capacitor.getPlatform();
 
+//4.233.146.155
 let apiUrl = 'http://localhost:5000/api'; // default for web
 
 if (platform !== 'web') {

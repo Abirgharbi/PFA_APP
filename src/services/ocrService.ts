@@ -44,7 +44,7 @@ export async function uploadImageForOCR(file: File, reportType: string): Promise
   }
 
   // Send POST request to OCR endpoint
-  const response = await axios.post(`${API_URL}/api/ocr`, formData, {
+  const response = await axios.post(`${API_URL}/ocr`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

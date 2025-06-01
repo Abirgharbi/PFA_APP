@@ -109,7 +109,6 @@ const ScanReport: React.FC = () => {
         image as File,
         reportType
       );
-      console.log("OCR Data:", data);
       // Validate OCR data - the OCRResponse has tables: { [category: string]: OCRTestResult[] }
       if (data.status !== "success") {
         throw new Error(`OCR échoué: ${data.status}`);
@@ -445,12 +444,12 @@ const ScanReport: React.FC = () => {
                             <td className="p-2">
                               <span
                                 className={
-                                  result.etat === "Anormal"
+                                  result.status === "Anormal"
                                     ? "text-red-600 font-medium"
                                     : "text-green-600"
                                 }
                               >
-                                {result.etat === "inconnu"
+                                {result.status === "inconnu"
                                   ? "Anormal"
                                   : "Normal"}
                               </span>

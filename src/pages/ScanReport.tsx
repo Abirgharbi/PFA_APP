@@ -431,7 +431,6 @@ const ScanReport: React.FC = () => {
                           <th className="p-2 text-left">Valeur</th>
                           <th className="p-2 text-left">Unité</th>
                           <th className="p-2 text-left">Valeurs usuelles</th>
-                          <th className="p-2 text-left">État</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -440,20 +439,7 @@ const ScanReport: React.FC = () => {
                             <td className="p-2">{result.name}</td>
                             <td className="p-2">{result.value}</td>
                             <td className="p-2">{result.unit}</td>
-                            <td className="p-2">{result.normalRange}</td>
-                            <td className="p-2">
-                              <span
-                                className={
-                                  result.status === "Anormal"
-                                    ? "text-red-600 font-medium"
-                                    : "text-green-600"
-                                }
-                              >
-                                {result.status === "inconnu"
-                                  ? "Anormal"
-                                  : "Normal"}
-                              </span>
-                            </td>
+                            <td className="p-2">{result.normalRange}</td>{" "}
                           </tr>
                         ))}
                       </tbody>

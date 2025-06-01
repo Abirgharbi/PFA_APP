@@ -37,14 +37,14 @@ export interface Report {
 
 
 
-export type ReportType = 'blood_test' | 'imaging' | 'physical_exam' | 'pathology' | 'other';
+export type ReportType = 'blood_test' | 'imaging' | 'Analyse sanguine' | 'Examen clinique' | 'Autre';
 
 export const ReportTypes: ReportType[] = [
   'blood_test',
   'imaging',
-  'physical_exam',
-  'pathology',
-  'other'
+  'Analyse sanguine',
+  'Examen clinique',
+  'Autre'
 ];
 
 export type ReportStatus = 
@@ -57,9 +57,9 @@ export function getReportTypeLabel(type: ReportType): string {
   const labels: Record<ReportType, string> = {
     blood_test: "Blood Test",
     imaging: "Imaging",
-    physical_exam: "Physical Examination",
-    pathology: "Pathology",
-    other: "Other Report"
+    "Analyse sanguine": "Analyse Sanguine",
+    "Examen clinique": "Examen Clinique",
+    Autre: "Autre"
   };
   return labels[type] || "Unknown";
 }

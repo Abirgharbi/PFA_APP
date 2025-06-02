@@ -236,7 +236,7 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
                             </Label>
                             <div className="flex gap-2">
                               <Input
-                                placeholder="doctor@example.com"
+                                placeholder="patient@example.com"
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -390,7 +390,7 @@ const PatientPage: React.FC<PatientSelectionProps> = ({ onSelectPatient }) => {
                           </Label>
                           <div className="flex gap-2">
                             <Input
-                              placeholder="doctor@example.com"
+                              placeholder="patient@example.com"
                               type="email"
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}

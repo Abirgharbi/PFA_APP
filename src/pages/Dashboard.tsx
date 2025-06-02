@@ -261,7 +261,11 @@ const Dashboard: React.FC = () => {
                     <Button
                       variant="ghost"
                       className="w-full"
-                      onClick={() => toast.info("Viewing all notifications ")}
+                      onClick={() =>
+                        toast.info(
+                          "Viewing all notifications"
+                        )
+                      }
                     >
                       View All Notifications
                     </Button>

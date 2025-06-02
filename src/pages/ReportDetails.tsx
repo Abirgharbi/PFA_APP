@@ -71,17 +71,17 @@ const ReportDetails: React.FC = () => {
   };
 
   const handleDeleteReport = () => {
-    toast.info("Delete functionality ");
+  
     setShowDeleteDialog(false);
     navigate("/archive");
   };
 
   const handlePrintReport = () => {
-    toast.info("Printing functionality ");
+
   };
 
   const handleDownloadReport = () => {
-    toast.info("Download functionality ");
+
   };
   const getOverallStatus = (): string => {
     if (!report?.ocrResult?.tables) return "Inconnu";
@@ -151,7 +151,9 @@ const ReportDetails: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => toast.info("Edit functionality ")}
+                onClick={() =>
+                  toast.info("Edit")
+                }
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit

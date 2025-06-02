@@ -117,8 +117,6 @@ const Login: React.FC = () => {
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
-
-
             </CardContent>
             <CardFooter>
               <p className="text-center text-sm text-gray-600 mt-2 w-full">

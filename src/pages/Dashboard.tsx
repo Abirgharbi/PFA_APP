@@ -271,7 +271,7 @@ const Dashboard: React.FC = () => {
                       className="w-full"
                       onClick={() =>
                         toast.info(
-                          "Viewing all notifications is not implemented in this demo"
+                          "Viewing all notifications"
                         )
                       }
                     >

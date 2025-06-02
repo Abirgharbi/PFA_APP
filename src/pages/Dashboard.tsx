@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  FileText,
-  Upload,
-  Share2,
-  Calendar,
-  Plus,
-} from "lucide-react";
+import { FileText, Upload, Share2, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,6 +20,7 @@ import { AlertTriangle } from "lucide-react";
 
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { report } from "process";
 
 const Dashboard: React.FC = () => {
   const { user, isDoctor } = useAuth();
@@ -34,7 +29,6 @@ const Dashboard: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     if (!user) {
       navigate("/login");
@@ -61,15 +55,13 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       }
     };
-
     loadData();
   }, [user, navigate]);
-    useEffect(() => {
+  console.log(reports);
 
-
+  useEffect(() => {
     const loadDatanotif = async () => {
       try {
-
         // Load reports from API
         if (user?.token) {
           const reportsData = await getReportsForUser(user.token);
@@ -269,11 +261,7 @@ const Dashboard: React.FC = () => {
                     <Button
                       variant="ghost"
                       className="w-full"
-                      onClick={() =>
-                        toast.info(
-                          "Viewing all notifications is not implemented in this demo"
-                        )
-                      }
+                      onClick={() => toast.info("Viewing all notifications ")}
                     >
                       View All Notifications
                     </Button>
@@ -282,66 +270,66 @@ const Dashboard: React.FC = () => {
               </Card>
 
               {/* Follow-up Calendar */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    Upcoming Follow-ups
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {notifications.some((n) => n.type === "follow-up") ? (
-                    <div className="space-y-3">
-                      {notifications
-                        .filter((n) => n.type === "follow-up")
-                        .slice(0, 3)
-                        .map((notif) => {
-                          const followUpDate = new Date(notif.datefollowup);
-                          const today = new Date();
-                          const diffInDays =
-                            (followUpDate.getTime() - today.getTime()) /
-                            (1000 * 60 * 60 * 24);
-
-                          const isUrgent = diffInDays >= 0 && diffInDays <= 3;
-                          console.log(isUrgent);
-
-                          return (
-                            <div
-                              key={notif.id}
-                              className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
-                              onClick={() => {
-                                if (notif.reportId)
-                                  navigate(`/report/${notif.reportId}`);
-                              }}
-                            >
-                              <div className="mr-3 bg-medical/10 text-medical p-2 rounded-md relative">
-                                <Calendar className="h-4 w-4" />
-                                {isUrgent && (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 absolute -top-2 -right-2" />
-                                )}
+              {user.role === "patient" ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Calendar className="h-5 w-5 mr-2" />
+                      Upcoming Follow-ups
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {notifications.some((n) => n.type === "follow-up") ? (
+                      <div className="space-y-3">
+                        {notifications
+                          .filter((n) => n.type === "follow-up")
+                          .slice(0, 3)
+                          .map((notif) => {
+                            const followUpDate = new Date(notif.datefollowup);
+                            const today = new Date();
+                            const diffInDays =
+                              (followUpDate.getTime() - today.getTime()) /
+                              (1000 * 60 * 60 * 24);
+                            const isUrgent = diffInDays >= 0 && diffInDays <= 3;
+                            console.log(isUrgent);
+                            return (
+                              <div
+                                key={notif.id}
+                                className="flex items-center p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                                onClick={() => {
+                                  if (notif.reportId)
+                                    navigate(`/report/${notif.reportId}`);
+                                }}
+                              >
+                                <div className="mr-3 bg-medical/10 text-medical p-2 rounded-md relative">
+                                  <Calendar className="h-4 w-4" />
+                                  {isUrgent && (
+                                    <AlertTriangle className="h-4 w-4 text-red-500 absolute -top-2 -right-2" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm">
+                                    {notif.title}
+                                  </p>
+                                  <p className="text-gray-600 text-xs">
+                                    {notif.message}
+                                  </p>
+                                  <p className="text-gray-400 text-xs mt-1">
+                                    {followUpDate.toLocaleDateString()}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium text-sm">
-                                  {notif.title}
-                                </p>
-                                <p className="text-gray-600 text-xs">
-                                  {notif.message}
-                                </p>
-                                <p className="text-gray-400 text-xs mt-1">
-                                  {followUpDate.toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <p className="text-gray-500">No upcoming follow-ups</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-gray-500">No upcoming follow-ups</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : null}
             </div>
           </div>
         </div>

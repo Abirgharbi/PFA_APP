@@ -200,7 +200,7 @@ const ScanReport: React.FC = () => {
       }
 
       toast.success("Rapport enregistré avec succès");
-      navigate(`/report/${newReport.id}`);
+      navigate(`/dashboard`);
     } catch (error) {
       console.error("Erreur:", error);
       toast.error("Échec de l'enregistrement", {

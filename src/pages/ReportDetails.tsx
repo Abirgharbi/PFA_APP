@@ -284,7 +284,7 @@ const ReportDetails: React.FC = () => {
                 {report.imageUrl ? (
                   <div className="flex justify-center">
                     <img
-                      src={`http://127.0.0.1:5000/${report.imageUrl}`}
+                      src={`http://4.233.146.155:5000/${report.imageUrl}`}
                       alt="Original report"
                       className="max-w-full rounded-md border border-gray-200 shadow-sm"
                       style={{ maxHeight: "800px" }}
